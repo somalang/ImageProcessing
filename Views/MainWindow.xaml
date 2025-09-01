@@ -3,25 +3,56 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:ImageProcessing.ViewModels"
         Title="Image Processing App"
-        Height="500" Width="800">
+        Height="600" Width="900">
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
 
     <DockPanel>
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
-            <Button Content="이미지 불러오기" 
-                    Command="{Binding LoadImageCommand}" 
-                    Margin="5"/>
-            <Button Content="이미지 삭제" 
-                    Command="{Binding DeleteImageCommand}" 
-                    Margin="5"/>
-            <Button Content="다시 불러오기" 
-                    Command="{Binding ReloadImageCommand}" 
-                    Margin="5"/>
-        </StackPanel>
+        <!-- 메뉴바 -->
+        <Menu DockPanel.Dock="Top">
+            <!-- 파일 -->
+            <MenuItem Header="파일">
+                <MenuItem Header="불러오기" Command="{Binding LoadImageCommand}" />
+                <MenuItem Header="삭제" Command="{Binding DeleteImageCommand}" />
+                <MenuItem Header="다시 불러오기" Command="{Binding ReloadImageCommand}" />
+                <Separator />
+                <MenuItem Header="저장" Command="{Binding SaveImageCommand}" />
+                <MenuItem Header="종료" Command="{Binding ExitCommand}" />
+            </MenuItem>
 
+            <!-- 편집 -->
+            <MenuItem Header="편집">
+                <MenuItem Header="되돌리기 (Undo)" Command="{Binding UndoCommand}" />
+                <MenuItem Header="다시하기 (Redo)" Command="{Binding RedoCommand}" />
+            </MenuItem>
+
+            <!-- 필터 -->
+            <MenuItem Header="필터">
+                <MenuItem Header="그레이스케일" Command="{Binding GrayscaleCommand}" />
+                <MenuItem Header="가우시안 블러" Command="{Binding GaussianBlurCommand}" />
+                <MenuItem Header="미디언 필터" Command="{Binding MedianFilterCommand}" />
+            </MenuItem>
+
+            <!-- FFT -->
+            <MenuItem Header="FFT">
+                <MenuItem Header="푸리에 변환" Command="{Binding FFTCommand}" />
+                <MenuItem Header="역 변환" Command="{Binding IFFTCommand}" />
+            </MenuItem>
+
+            <!-- 매칭 -->
+            <MenuItem Header="매칭">
+                <MenuItem Header="템플릿 매칭" Command="{Binding TemplateMatchCommand}" />
+            </MenuItem>
+
+            <!-- 설정 -->
+            <MenuItem Header="설정">
+                <MenuItem Header="환경 설정" Command="{Binding OpenSettingsCommand}" />
+            </MenuItem>
+        </Menu>
+
+        <!-- 이미지 표시 영역 -->
         <Border BorderBrush="Gray" BorderThickness="1" Margin="5">
             <Image Source="{Binding LoadedImage}" 
                    Stretch="Uniform"/>
