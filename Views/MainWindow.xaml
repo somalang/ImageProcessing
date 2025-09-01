@@ -15,6 +15,7 @@
             <!-- 파일 -->
             <MenuItem Header="파일">
                 <MenuItem Header="불러오기" Command="{Binding LoadImageCommand}" />
+                <MenuItem Header="원본 보기" Command="{Binding ShowOriginalImageCommand}" />
                 <MenuItem Header="삭제" Command="{Binding DeleteImageCommand}" />
                 <MenuItem Header="다시 불러오기" Command="{Binding ReloadImageCommand}" />
                 <Separator />
