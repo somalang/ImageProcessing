@@ -6,10 +6,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="Views\Controls\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="ImageProcessingEngine\ImageProcessingEngine.vcxproj" />
   </ItemGroup>
 
 </Project>
