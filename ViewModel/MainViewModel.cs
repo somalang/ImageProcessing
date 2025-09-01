@@ -6,6 +6,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Media.Imaging;
+using System.Windows; // Rect, Point 사용
+using System.Windows.Controls; // Image 컨트롤 사용
 
 namespace ImageProcessing.ViewModels
 {
@@ -19,6 +21,29 @@ namespace ImageProcessing.ViewModels
         private BitmapImage _originalImage;
         private BitmapImage _loadedImage;
         private string _lastFilePath;
+        // --- (새로 추가) 선택 영역 관련 속성 ---
+        private Rect _selectionRect;
+        public Rect SelectionRect
+        {
+            get => _selectionRect;
+            set { _selectionRect = value; OnPropertyChanged(); }
+        }
+
+        private Visibility _selectionVisibility = Visibility.Collapsed;
+        public Visibility SelectionVisibility
+        {
+            get => _selectionVisibility;
+            set { _selectionVisibility = value; OnPropertyChanged(); }
+        }
+
+        private Point _startPoint;
+        private bool _isSelecting = false;
+
+
+        // --- (새로 추가) 편집 관련 명령 ---
+        public RelayCommand CutSelectionCommand { get; }
+        public RelayCommand CopySelectionCommand { get; }
+        public RelayCommand DeleteSelectionCommand { get; }
 
         public BitmapImage LoadedImage
         {
@@ -67,6 +92,9 @@ namespace ImageProcessing.ViewModels
             IFFTCommand = new RelayCommand(_ => MessageBox.Show("역 FFT 실행"));
             TemplateMatchCommand = new RelayCommand(_ => MessageBox.Show("템플릿 매칭 실행"));
             OpenSettingsCommand = new RelayCommand(_ => MessageBox.Show("환경 설정 창 열기"));
+            CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasSelection());
+            CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasSelection());
+            DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasSelection());
         }
 
         private void LoadImage()
@@ -125,7 +153,56 @@ namespace ImageProcessing.ViewModels
                 _originalImageViewer.Activate();
             }
         }
+        // --- (새로 추가) 마우스 이벤트 처리 메소드 ---
+        public void StartSelection(Point startPoint)
+        {
+            if (!HasImage) return;
+            _isSelecting = true;
+            _startPoint = startPoint;
+            SelectionRect = new Rect(startPoint, startPoint);
+            SelectionVisibility = Visibility.Visible;
+        }
 
+        public void UpdateSelection(Point currentPoint)
+        {
+            if (!_isSelecting) return;
+
+            var x = Math.Min(_startPoint.X, currentPoint.X);
+            var y = Math.Min(_startPoint.Y, currentPoint.Y);
+            var width = Math.Abs(_startPoint.X - currentPoint.X);
+            var height = Math.Abs(_startPoint.Y - currentPoint.Y);
+            SelectionRect = new Rect(x, y, width, height);
+        }
+
+        public void EndSelection()
+        {
+            _isSelecting = false;
+            // 선택 영역이 너무 작으면 선택 취소
+            if (SelectionRect.Width < 2 || SelectionRect.Height < 2)
+            {
+                SelectionVisibility = Visibility.Collapsed;
+            }
+        }
+
+        // --- (새로 추가) 편집 명령 실행 메소드 ---
+        private bool HasSelection() => HasImage && SelectionVisibility == Visibility.Visible;
+
+        private void CutSelection()
+        {
+            MessageBox.Show($"영역 {SelectionRect} 오려두기 실행 (구현 필요)");
+            // TODO: C++ 엔진에 선택 영역 좌표를 넘겨 픽셀 처리
+        }
+        private void CopySelection()
+        {
+            MessageBox.Show($"영역 {SelectionRect} 복제 실행 (구현 필요)");
+            // TODO: C++ 엔진에 선택 영역 좌표를 넘겨 픽셀 처리
+        }
+        private void DeleteSelection()
+        {
+            MessageBox.Show($"영역 {SelectionRect} 삭제 실행 (구현 필요)");
+            // TODO: C++ 엔진에 선택 영역 좌표를 넘겨 픽셀 처리
+            SelectionVisibility = Visibility.Collapsed; // 삭제 후 선택 영역 숨기기
+        }
         public event PropertyChangedEventHandler PropertyChanged;
         private void OnPropertyChanged([CallerMemberName] string name = null)
         {

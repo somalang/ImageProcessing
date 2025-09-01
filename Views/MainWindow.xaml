@@ -54,9 +54,45 @@
         </Menu>
 
         <!-- 이미지 표시 영역 -->
-        <Border BorderBrush="Gray" BorderThickness="1" Margin="5">
-            <Image Source="{Binding LoadedImage}" 
-                   Stretch="Uniform"/>
-        </Border>
+        <Grid>
+            <Border BorderBrush="Gray" BorderThickness="1" Margin="5">
+                <Image x:Name="DisplayImage" Source="{Binding LoadedImage}" Stretch="Uniform"/>
+            </Border>
+
+            <Canvas Margin="5"
+            Background="Transparent"
+            MouseDown="Canvas_MouseDown"
+            MouseMove="Canvas_MouseMove"
+            MouseUp="Canvas_MouseUp">
+
+                <Rectangle
+            Stroke="Cyan"
+            StrokeThickness="2"
+            Fill="#5500FFFF"
+            Visibility="{Binding SelectionVisibility}">
+                    <Canvas.Left>
+                        <Binding Path="SelectionRect.X" Mode="OneWay"/>
+                    </Canvas.Left>
+                    <Canvas.Top>
+                        <Binding Path="SelectionRect.Y" Mode="OneWay"/>
+                    </Canvas.Top>
+                    <Rectangle.Width>
+                        <Binding Path="SelectionRect.Width" Mode="OneWay"/>
+                    </Rectangle.Width>
+                    <Rectangle.Height>
+                        <Binding Path="SelectionRect.Height" Mode="OneWay"/>
+                    </Rectangle.Height>
+                </Rectangle>
+            </Canvas>
+        </Grid>
+
+        <MenuItem Header="편집">
+            <MenuItem Header="되돌리기 (Undo)" Command="{Binding UndoCommand}" />
+            <MenuItem Header="다시하기 (Redo)" Command="{Binding RedoCommand}" />
+            <Separator/>
+            <MenuItem Header="오려두기" Command="{Binding CutSelectionCommand}" />
+            <MenuItem Header="복제" Command="{Binding CopySelectionCommand}" />
+            <MenuItem Header="삭제" Command="{Binding DeleteSelectionCommand}" />
+        </MenuItem>
     </DockPanel>
 </Window>
