@@ -1,10 +1,10 @@
-﻿using ImageProcessingApp.Models;
+﻿using ImageProcessing.Models;
 using Microsoft.Win32;
 using System;
 using System.IO;
 using System.Windows.Media.Imaging;
 
-namespace ImageProcessingApp.Services
+namespace ImageProcessing.Services
 {
     public class FileService
     {

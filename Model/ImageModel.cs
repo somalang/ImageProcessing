@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Media.Imaging;
 
-namespace ImageProcessingApp.Models
+namespace ImageProcessing.Models
 {
     public class ImageModel
     {

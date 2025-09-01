@@ -1,6 +1,6 @@
 ﻿using System.Windows.Media.Imaging;
 
-namespace ImageProcessingApp.Services
+namespace ImageProcessing.Services
 {
     public class ImageProcessor
     {

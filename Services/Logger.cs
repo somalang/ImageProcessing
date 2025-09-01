@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ImageProcessingApp.Services
+namespace ImageProcessing.Services
 {
     public static class Logger
     {

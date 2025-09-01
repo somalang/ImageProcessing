@@ -1,58 +1,84 @@
-﻿using ImageProcessingApp.Models;
-using ImageProcessingApp.Services;
-using System.Collections.ObjectModel;
-using System.Windows.Input;
+﻿using ImageProcessing.ViewModels;
+using Microsoft.Win32;
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Windows.Media.Imaging;
 
-namespace ImageProcessingApp.ViewModels
+namespace ImageProcessing.ViewModels
 {
-    public class MainViewModel : ViewModelBase
+    public class MainViewModel : INotifyPropertyChanged
     {
-        private readonly FileService _fileService;
-        private readonly ImageProcessor _imageProcessor;
+        private BitmapImage _loadedImage;
 
-        private ImageModel _currentImage;
-        public ImageModel CurrentImage
+        public BitmapImage LoadedImage
         {
-            get => _currentImage;
-            set => SetProperty(ref _currentImage, value);
-        }
-
-        public ObservableCollection<ImageModel> ImageHistory { get; } = new();
-
-        public ICommand OpenImageCommand { get; }
-        public ICommand SaveImageCommand { get; }
-        public ICommand ApplyFilterCommand { get; }
-
-        public MainViewModel()
-        {
-            _fileService = new FileService();
-            _imageProcessor = new ImageProcessor();
-
-            OpenImageCommand = new RelayCommand(_ => OpenImage());
-            SaveImageCommand = new RelayCommand(_ => SaveImage(), _ => CurrentImage != null);
-            ApplyFilterCommand = new RelayCommand(_ => ApplyFilter(), _ => CurrentImage != null);
-        }
-
-        private void OpenImage()
-        {
-            var image = _fileService.OpenImage();
-            if (image != null)
+            get => _loadedImage;
+            set
             {
-                CurrentImage = image;
-                ImageHistory.Add(image);
+                _loadedImage = value;
+                OnPropertyChanged();
+                OnPropertyChanged(nameof(HasImage));
             }
         }
 
-        private void SaveImage()
+        public bool HasImage => LoadedImage != null;
+
+        public RelayCommand LoadImageCommand { get; }
+        public RelayCommand DeleteImageCommand { get; }
+        public RelayCommand ReloadImageCommand { get; }
+
+        private string _lastFilePath;
+
+        public MainViewModel()
         {
-            if (CurrentImage?.ProcessedImage != null)
-                _fileService.SaveImage(CurrentImage.ProcessedImage);
+            LoadImageCommand = new RelayCommand(_ => LoadImage());
+            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => HasImage);
+            ReloadImageCommand = new RelayCommand(_ => ReloadImage(), _ => !string.IsNullOrEmpty(_lastFilePath));
         }
 
-        private void ApplyFilter()
+        private void LoadImage()
         {
-            if (CurrentImage?.OriginalImage != null)
-                CurrentImage.ProcessedImage = _imageProcessor.ApplyGaussianBlur(CurrentImage.OriginalImage, 1.5);
+            var dialog = new OpenFileDialog
+            {
+                Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                _lastFilePath = dialog.FileName;
+                LoadBitmapFromPath(_lastFilePath);
+            }
+        }
+
+        private void ReloadImage()
+        {
+            if (!string.IsNullOrEmpty(_lastFilePath))
+            {
+                LoadBitmapFromPath(_lastFilePath);
+            }
+        }
+
+        private void LoadBitmapFromPath(string path)
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(path);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+
+            LoadedImage = bitmap;
+        }
+
+        private void DeleteImage()
+        {
+            LoadedImage = null;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+        private void OnPropertyChanged([CallerMemberName] string name = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }

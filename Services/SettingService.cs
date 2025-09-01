@@ -1,6 +1,6 @@
-﻿using ImageProcessingApp.Models;
+﻿using ImageProcessing.Models;
 
-namespace ImageProcessingApp.Services
+namespace ImageProcessing.Services
 {
     public class SettingsService
     {

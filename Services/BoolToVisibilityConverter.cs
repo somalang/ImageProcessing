@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ImageProcessingApp.Services
+namespace ImageProcessing.Services
 {
     public class BoolToVisibilityConverter : IValueConverter
     {

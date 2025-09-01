@@ -1,4 +1,4 @@
-﻿namespace ImageProcessingApp.Models
+﻿namespace ImageProcessing.Models
 {
     public class FilterParameters
     {

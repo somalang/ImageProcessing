@@ -1,4 +1,4 @@
-﻿namespace ImageProcessingApp.Utilities
+﻿namespace ImageProcessing.Utilities
 {
     public static class ImageUtility
     {

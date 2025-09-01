@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ImageProcessingApp.Models
+namespace ImageProcessing.Models
 {
     public class AppSettings
     {
@@ -8,7 +8,5 @@ namespace ImageProcessingApp.Models
         public int DefaultKernelSize { get; set; } = 3;
         public double DefaultThreshold { get; set; } = 0.5;
         public string DefaultImagePath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        public bool AutoCommitEnabled { get; set; } = true;
-        public string GitRepositoryPath { get; set; } = ".";
     }
 }
