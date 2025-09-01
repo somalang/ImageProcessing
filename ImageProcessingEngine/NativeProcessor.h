@@ -3,9 +3,26 @@
 class NativeProcessor
 {
 public:
-    // 실제 픽셀 데이터를 받아 그레이스케일로 변환하는 함수
+    // 픽셀 데이터를 받아 그레이스케일로 변환하는 함수
     void ToGrayscale(unsigned char* pixels, int width, int height);
 
-    // TODO: 여기에 다른 영상처리 함수들을 선언합니다.
-    // 예: void Sobel(unsigned char* pixels, int width, int height);
+    // --- 새로 추가된 함수 선언 ---
+
+    // 가우시안 블러 (노이즈 제거)
+    void ApplyGaussianBlur(unsigned char* pixels, int width, int height);
+
+    // 소벨 엣지 검출
+    void ApplySobel(unsigned char* pixels, int width, int height);
+
+    // 라플라시안 엣지 검출
+    void ApplyLaplacian(unsigned char* pixels, int width, int height);
+
+    // 이진화 (임계값 처리)
+    void ApplyBinarization(unsigned char* pixels, int width, int height, int threshold);
+
+    // 팽창 연산 (Morphology)
+    void ApplyDilation(unsigned char* pixels, int width, int height, int kernelSize);
+
+    // 침식 연산 (Morphology)
+    void ApplyErosion(unsigned char* pixels, int width, int height, int kernelSize);
 };
