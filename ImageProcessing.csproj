@@ -10,6 +10,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="ImageProcessingEngine\**" />
+    <EmbeddedResource Remove="ImageProcessingEngine\**" />
+    <None Remove="ImageProcessingEngine\**" />
+    <Page Remove="ImageProcessingEngine\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Views\Controls\" />
   </ItemGroup>
 
