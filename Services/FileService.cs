@@ -2,13 +2,14 @@
 using Microsoft.Win32;
 using System;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows.Media.Imaging;
 
 namespace ImageProcessing.Services
 {
     public class FileService
     {
-        public ImageModel OpenImage()
+        public string OpenImageFileDialog()
         {
             var dialog = new OpenFileDialog
             {
@@ -17,22 +18,26 @@ namespace ImageProcessing.Services
 
             if (dialog.ShowDialog() == true)
             {
-                var image = new BitmapImage(new Uri(dialog.FileName));
-                return new ImageModel
-                {
-                    OriginalImage = image,
-                    FilePath = dialog.FileName,
-                    FileName = Path.GetFileName(dialog.FileName),
-                    Width = image.PixelWidth,
-                    Height = image.PixelHeight,
-                    Format = image.Format.ToString(),
-                    LoadedTime = DateTime.Now
-                };
+                return dialog.FileName;
             }
             return null;
         }
 
-        public void SaveImage(BitmapImage image)
+        public async Task<BitmapImage> LoadImage(string filePath)
+        {
+            return await Task.Run(() =>
+            {
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.CacheOption = BitmapCacheOption.OnLoad;
+                image.UriSource = new Uri(filePath);
+                image.EndInit();
+                image.Freeze();
+                return image;
+            });
+        }
+
+        public string SaveImageFileDialog()
         {
             var dialog = new SaveFileDialog
             {
@@ -41,11 +46,20 @@ namespace ImageProcessing.Services
 
             if (dialog.ShowDialog() == true)
             {
-                using var fileStream = new FileStream(dialog.FileName, FileMode.Create);
+                return dialog.FileName;
+            }
+            return null;
+        }
+
+        public async Task SaveImage(BitmapImage image, string filePath)
+        {
+            await Task.Run(() =>
+            {
+                using var fileStream = new FileStream(filePath, FileMode.Create);
                 var encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(image));
                 encoder.Save(fileStream);
-            }
+            });
         }
     }
 }

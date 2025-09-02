@@ -60,3 +60,12 @@ bool ImageProcessingEngine::ImageEngine::ApplyErosion(array<unsigned char>^ pixe
     processor.ApplyErosion(nativePixels, width, height, kernelSize);
     return true;
 }
+
+// 중앙값 필터 래퍼 함수 추가
+bool ImageProcessingEngine::ImageEngine::ApplyMedianFilter(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize)
+{
+    pin_ptr<unsigned char> nativePixels = &pixelBuffer[0];
+    NativeProcessor processor;
+    processor.ApplyMedianFilter(nativePixels, width, height, kernelSize);
+    return true;
+}

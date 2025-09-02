@@ -19,8 +19,6 @@ void NativeProcessor::ToGrayscale(unsigned char* pixels, int width, int height)
     }
 }
 
-// --- 여기서부터 새로 구현된 함수들 ---
-
 // 컨볼루션 헬퍼 함수
 void Convolve(const unsigned char* src, unsigned char* dst, int width, int height, const std::vector<float>& kernel, int kSize) {
     int kHalf = kSize / 2;
@@ -184,4 +182,54 @@ void NativeProcessor::ApplyErosion(unsigned char* pixels, int width, int height,
             p[0] = p[1] = p[2] = minVal;
         }
     }
+}
+
+// 중앙값 필터: 소금-후추 노이즈와 같은 임펄스 노이즈를 효과적으로 제거합니다.
+void NativeProcessor::ApplyMedianFilter(unsigned char* pixels, int width, int height, int kernelSize)
+{
+    if (kernelSize % 2 == 0) return; // 커널 크기는 홀수여야 함
+
+    std::vector<unsigned char> temp(width * height * 4);
+    memcpy(temp.data(), pixels, width * height * 4);
+
+    int kHalf = kernelSize / 2;
+    int stride = width * 4;
+
+    for (int y = kHalf; y < height - kHalf; ++y) {
+        for (int x = kHalf; x < width - kHalf; ++x) {
+            std::vector<unsigned char> b_vals, g_vals, r_vals;
+            for (int ky = -kHalf; ky <= kHalf; ++ky) {
+                for (int kx = -kHalf; kx <= kHalf; ++kx) {
+                    const unsigned char* p = temp.data() + (y + ky) * stride + (x + kx) * 4;
+                    b_vals.push_back(p[0]);
+                    g_vals.push_back(p[1]);
+                    r_vals.push_back(p[2]);
+                }
+            }
+
+            std::sort(b_vals.begin(), b_vals.end());
+            std::sort(g_vals.begin(), g_vals.end());
+            std::sort(r_vals.begin(), r_vals.end());
+
+            int median_index = b_vals.size() / 2;
+            unsigned char median_b = b_vals[median_index];
+            unsigned char median_g = g_vals[median_index];
+            unsigned char median_r = r_vals[median_index];
+
+            unsigned char* p = pixels + y * stride + x * 4;
+            p[0] = median_b;
+            p[1] = median_g;
+            p[2] = median_r;
+        }
+    }
+}
+
+void NativeProcessor::Binarize(unsigned char* pixels, int width, int height, int threshold)
+{
+    ApplyBinarization(pixels, width, height, threshold);
+}
+
+void NativeProcessor::Dilate(unsigned char* pixels, int width, int height, int kernelSize)
+{
+    ApplyDilation(pixels, width, height, kernelSize);
 }

@@ -1,4 +1,4 @@
-﻿using ImageProcessing.ViewModels;
+﻿using ImageProcessing.ViewModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -9,15 +9,14 @@ namespace ImageProcessing.Views
         public MainWindow()
         {
             InitializeComponent();
-            // DataContext는 XAML에서 이미 설정됨
-            // DataContext = new MainViewModel();
         }
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
             if (DataContext is MainViewModel viewModel)
             {
-                viewModel.StartSelection(e.GetPosition(sender as IInputElement));
+                var startPoint = e.GetPosition(sender as IInputElement);
+                viewModel.StartSelection(startPoint);
             }
         }
 
@@ -26,7 +25,7 @@ namespace ImageProcessing.Views
             if (DataContext is MainViewModel viewModel)
             {
                 var currentPoint = e.GetPosition(sender as IInputElement);
-                viewModel.UpdateCoordinates(currentPoint); // 좌표 업데이트
+                viewModel.UpdateCoordinates(currentPoint);
 
                 if (e.LeftButton == MouseButtonState.Pressed)
                 {
@@ -47,7 +46,7 @@ namespace ImageProcessing.Views
         {
             if (DataContext is MainViewModel viewModel)
             {
-                viewModel.ClearCoordinates(); // 좌표 초기화
+                viewModel.ClearCoordinates();
             }
         }
     }

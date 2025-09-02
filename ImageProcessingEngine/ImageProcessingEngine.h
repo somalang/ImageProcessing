@@ -18,5 +18,8 @@ namespace ImageProcessingEngine {
 
         // 팽창: kernelSize 파라미터 추가
         bool ApplyDilation(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
+
+        // 중앙값 필터: kernelSize 파라미터 추가
+        bool ApplyMedianFilter(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
     };
 }
