@@ -18,6 +18,11 @@ namespace ImageProcessing.ViewModel
         private BitmapImage _currentBitmapImage;
         private readonly ImageProcessor _imageProcessor;
         private readonly FileService _fileService;
+        private readonly SettingService _settingService; // <-- 이 줄을 추가하세요.
+        private string _lastImagePath; // <-- 이 줄을 추가하세요.
+
+        private BitmapImage _originalImage; // <-- 이 줄을 추가하세요.
+        private Views.OriginalImageView _originalImageView; // <-- 이 줄을 추가하세요.
 
         private BitmapImage _loadedImage;
         private string _currentCoordinates;
@@ -114,7 +119,12 @@ namespace ImageProcessing.ViewModel
         {
             _imageProcessor = new ImageProcessor();
             _fileService = new FileService();
+            _settingService = new SettingService(); // SettingService 인스턴스 생성
+
             _isSelecting = false;
+            // 프로그램 시작 시 마지막 이미지 경로 불러오기
+            
+            _lastImagePath = _settingService.GetLastImagePath();
 
             SelectionVisibility = Visibility.Collapsed;
             // Rect.Empty 대신 명시적으로 0으로 초기화
@@ -136,9 +146,30 @@ namespace ImageProcessing.ViewModel
             UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo);
             RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo);
 
-            ShowOriginalImageCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-            DeleteImageCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-            ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync());
+            ShowOriginalImageCommand = new RelayCommand(_ =>
+            {
+                if (_originalImage != null)
+                {
+                    if (_originalImageView == null)
+                    {
+                        _originalImageView = new Views.OriginalImageView(_originalImage);
+                        // 창이 닫힐 때 참조를 null로 설정합니다.
+                        _originalImageView.Closed += (s, e) => _originalImageView = null;
+                        _originalImageView.Show();
+                    }
+                    else
+                    {
+                        // 창이 이미 열려있다면 활성화합니다.
+                        _originalImageView.Activate();
+                    }
+                }
+            }, _ => _originalImage != null);
+
+            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null);
+            ReloadImageCommand = new RelayCommand(
+                    async _ => await ReloadImageAsync(),
+                    _ => _originalImage != null || !string.IsNullOrEmpty(_lastImagePath)
+                );
             ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
             CutSelectionCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             CopySelectionCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
@@ -149,19 +180,66 @@ namespace ImageProcessing.ViewModel
             OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
         }
 
+        // ViewModel/MainViewModel.cs
+
         private async Task LoadImageAsync()
         {
             var filePath = _fileService.OpenImageFileDialog();
-            if (filePath != null)
+            if (!string.IsNullOrEmpty(filePath))
             {
-                LoadedImage = await _fileService.LoadImage(filePath);
-                CurrentBitmapImage = LoadedImage;
+                await LoadImageFromPathAsync(filePath);
             }
         }
 
+        // 아래 새 메서드를 추가합니다.
+        private async Task LoadImageFromPathAsync(string filePath)
+        {
+            LoadedImage = await _fileService.LoadImage(filePath);
+            _originalImage = LoadedImage;
+            CurrentBitmapImage = LoadedImage;
+
+            // 마지막 이미지 경로를 저장합니다.
+            _lastImagePath = filePath;
+            _settingService.SaveLastImagePath(filePath);
+        }
+
+        // ReloadImageAsync 메서드를 아래 코드로 교체합니다.
         private async Task ReloadImageAsync()
         {
-            // ReloadImageAsync 로직을 구현합니다.
+            // 1. 현재 작업 중인 원본 이미지가 있으면 그걸로 되돌립니다.
+            if (_originalImage != null)
+            {
+                CurrentBitmapImage = _originalImage;
+                LoadedImage = _originalImage;
+                //_imageProcessor.ClearHistory();
+            }
+            // 2. 작업 중인 이미지는 없지만 마지막 파일 경로가 있다면 해당 파일을 불러옵니다.
+            else if (!string.IsNullOrEmpty(_lastImagePath) && File.Exists(_lastImagePath))
+            {
+                await LoadImageFromPathAsync(_lastImagePath);
+            }
+        }
+
+        // DeleteImage 메서드를 아래 코드로 교체합니다.
+        private void DeleteImage()
+        {
+            // 1. 열려있는 원본 이미지 창을 닫습니다.
+            _originalImageView?.Close();
+
+            // 2. 현재 작업 중인 이미지만 null로 초기화합니다.
+            CurrentBitmapImage = null;
+            LoadedImage = null;
+            _originalImage = null;
+
+            // 3. 실행 취소/다시 실행 내역을 초기화합니다.
+            //_imageProcessor.ClearHistory();
+
+            // 4. 좌표 정보를 초기화합니다.
+            ClearCoordinates();
+
+            // 마지막 이미지 경로를 지우는 코드를 제거하여, Reload 버튼이 활성화되도록 둡니다.
+            // _lastImagePath = null;  <- 이 줄을 제거하거나 주석 처리
+            // _settingService.SaveLastImagePath(null); <- 이 줄을 제거하거나 주석 처리
         }
 
         private async Task SaveImageAsync()
@@ -172,7 +250,6 @@ namespace ImageProcessing.ViewModel
                 await _fileService.SaveImage(CurrentBitmapImage, filePath);
             }
         }
-
         private void ApplyFilter(System.Func<ImageProcessor, BitmapImage> filterAction)
         {
             if (CurrentBitmapImage == null) return;
