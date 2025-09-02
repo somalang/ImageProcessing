@@ -3,6 +3,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Collections.Generic;
 using ImageProcessingEngine;
+using System;
 
 namespace ImageProcessing.Services
 {
@@ -17,8 +18,11 @@ namespace ImageProcessing.Services
         public bool CanUndo => _undoStack.Count > 0;
         public bool CanRedo => _redoStack.Count > 0;
 
+        // FFT 상태 확인
+        public bool HasFFTData => _engine.HasFFTData();
+
         // Helper method to convert BitmapImage to byte array and back
-        private BitmapImage ProcessImage(BitmapImage source, System.Action<byte[], int, int> processAction)
+        private BitmapImage ProcessImage(BitmapImage source, Action<byte[], int, int> processAction)
         {
             if (source == null) return null;
 
@@ -55,6 +59,7 @@ namespace ImageProcessing.Services
             }
         }
 
+        // ------------------ 기존 필터 ------------------
         public BitmapImage ApplyGrayscale(BitmapImage source)
         {
             return ProcessImage(source, (pixels, width, height) => _engine.ApplyGrayscale(pixels, width, height));
@@ -95,6 +100,26 @@ namespace ImageProcessing.Services
             return ProcessImage(source, (pixels, width, height) => _engine.ApplyMedianFilter(pixels, width, height, 3));
         }
 
+        // ------------------ FFT 관련 ------------------
+        public BitmapImage ApplyFFT(BitmapImage source)
+        {
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyFFT(pixels, width, height));
+        }
+
+        public BitmapImage ApplyIFFT(BitmapImage source)
+        {
+            if (!HasFFTData)
+                throw new InvalidOperationException("FFT 데이터가 없습니다. 먼저 푸리에 변환을 수행해주세요.");
+
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyIFFT(pixels, width, height));
+        }
+
+        public void ClearFFTData()
+        {
+            _engine.ClearFFTData();
+        }
+
+        // ------------------ Undo / Redo ------------------
         public BitmapImage Undo()
         {
             if (_undoStack.Count > 0)

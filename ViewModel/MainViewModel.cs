@@ -143,8 +143,8 @@ namespace ImageProcessing.ViewModel
             CutSelectionCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             CopySelectionCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             DeleteSelectionCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-            FFTCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-            IFFTCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
+            FFTCommand = new RelayCommand(_ => ApplyFFT(), _ => CurrentBitmapImage != null);
+            IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData);
             TemplateMatchCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
         }
@@ -225,6 +225,23 @@ namespace ImageProcessing.ViewModel
         public void ClearCoordinates()
         {
             CurrentCoordinates = "좌표: X=0, Y=0";
+        }
+
+        // FFT 메서드들 (기존 ApplyFilter 패턴 사용)
+        private void ApplyFFT()
+        {
+            ApplyFilter(filter => filter.ApplyFFT(CurrentBitmapImage));
+        }
+
+        private void ApplyIFFT()
+        {
+            if (!_imageProcessor.HasFFTData)
+            {
+                System.Windows.MessageBox.Show("FFT 데이터가 없습니다. 먼저 푸리에 변환을 수행해주세요.", "경고");
+                return;
+            }
+            ApplyFilter(filter => filter.ApplyIFFT(CurrentBitmapImage));
+            _imageProcessor.ClearFFTData();
         }
     }
 }

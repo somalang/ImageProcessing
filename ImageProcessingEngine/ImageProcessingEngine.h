@@ -21,5 +21,11 @@ namespace ImageProcessingEngine {
 
         // 중앙값 필터: kernelSize 파라미터 추가
         bool ApplyMedianFilter(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
+
+        // --- FFT 함수들 추가 ---
+        bool ApplyFFT(array<unsigned char>^ pixelBuffer, int width, int height);
+        bool ApplyIFFT(array<unsigned char>^ pixelBuffer, int width, int height);
+        bool HasFFTData();
+        void ClearFFTData();
     };
 }
