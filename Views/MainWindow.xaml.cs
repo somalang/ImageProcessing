@@ -2,14 +2,15 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ImageProcessing.Views   // ← XAML의 x:Class 네임스페이스와 동일해야 함
+namespace ImageProcessing.Views
 {
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
-            InitializeComponent();  // ← XAML이 연결되면 정상 인식됨
-            DataContext = new MainViewModel();
+            InitializeComponent();
+            // DataContext는 XAML에서 이미 설정됨
+            // DataContext = new MainViewModel();
         }
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
@@ -22,9 +23,15 @@ namespace ImageProcessing.Views   // ← XAML의 x:Class 네임스페이스와 �
 
         private void Canvas_MouseMove(object sender, MouseEventArgs e)
         {
-            if (DataContext is MainViewModel viewModel && e.LeftButton == MouseButtonState.Pressed)
+            if (DataContext is MainViewModel viewModel)
             {
-                viewModel.UpdateSelection(e.GetPosition(sender as IInputElement));
+                var currentPoint = e.GetPosition(sender as IInputElement);
+                viewModel.UpdateCoordinates(currentPoint); // 좌표 업데이트
+
+                if (e.LeftButton == MouseButtonState.Pressed)
+                {
+                    viewModel.UpdateSelection(currentPoint);
+                }
             }
         }
 
@@ -33,6 +40,14 @@ namespace ImageProcessing.Views   // ← XAML의 x:Class 네임스페이스와 �
             if (DataContext is MainViewModel viewModel)
             {
                 viewModel.EndSelection();
+            }
+        }
+
+        private void Canvas_MouseLeave(object sender, MouseEventArgs e)
+        {
+            if (DataContext is MainViewModel viewModel)
+            {
+                viewModel.ClearCoordinates(); // 좌표 초기화
             }
         }
     }

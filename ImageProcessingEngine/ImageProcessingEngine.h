@@ -12,8 +12,11 @@ namespace ImageProcessingEngine {
         bool ApplyGaussianBlur(array<unsigned char>^ pixelBuffer, int width, int height);
         bool ApplySobel(array<unsigned char>^ pixelBuffer, int width, int height);
         bool ApplyLaplacian(array<unsigned char>^ pixelBuffer, int width, int height);
-        bool ApplyBinarization(array<unsigned char>^ pixelBuffer, int width, int height, int threshold);
-        bool ApplyDilation(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
         bool ApplyErosion(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
+        // 이진화: threshold 파라미터 추가
+        bool ApplyBinarization(array<unsigned char>^ pixelBuffer, int width, int height, int threshold);
+
+        // 팽창: kernelSize 파라미터 추가
+        bool ApplyDilation(array<unsigned char>^ pixelBuffer, int width, int height, int kernelSize);
     };
 }

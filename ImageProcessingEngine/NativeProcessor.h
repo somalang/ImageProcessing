@@ -25,4 +25,7 @@ public:
 
     // 침식 연산 (Morphology)
     void ApplyErosion(unsigned char* pixels, int width, int height, int kernelSize);
+
+    void Binarize(unsigned char* pixels, int width, int height, int threshold);
+    void Dilate(unsigned char* pixels, int width, int height, int kernelSize);
 };

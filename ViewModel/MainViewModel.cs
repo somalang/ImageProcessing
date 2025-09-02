@@ -12,21 +12,21 @@ namespace ImageProcessing.ViewModels
 {
     public class MainViewModel : INotifyPropertyChanged
     {
-        // --- Private Fields ---
-        private OriginalImageView _originalImageViewer;
+        // --- Fields ---
         private readonly FileService _fileService = new FileService();
         private readonly ImageProcessor _imageProcessor = new ImageProcessor();
 
+        private OriginalImageView _originalImageViewer;
         private BitmapImage _originalImage;
         private BitmapImage _loadedImage;
         private string _lastFilePath;
-
         private Rect _selectionRect;
         private Visibility _selectionVisibility = Visibility.Collapsed;
         private Point _startPoint;
         private bool _isSelecting = false;
+        private string _currentCoordinates; // 좌표 표시를 위한 필드 추가
 
-        // --- Public Properties ---
+        // --- Properties ---
         public BitmapImage LoadedImage
         {
             get => _loadedImage;
@@ -51,7 +51,15 @@ namespace ImageProcessing.ViewModels
             get => _selectionVisibility;
             set { _selectionVisibility = value; OnPropertyChanged(); }
         }
-
+        public string CurrentCoordinates
+        {
+            get => _currentCoordinates;
+            set
+            {
+                _currentCoordinates = value;
+                OnPropertyChanged();
+            }
+        }
         // --- Commands ---
         public RelayCommand LoadImageCommand { get; }
         public RelayCommand ShowOriginalImageCommand { get; }
@@ -100,9 +108,9 @@ namespace ImageProcessing.ViewModels
             GaussianBlurCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplyGaussianBlur(img)), _ => HasImage);
             SobelCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplySobel(img)), _ => HasImage);
             LaplacianCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplyLaplacian(img)), _ => HasImage);
-            BinarizationCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplyBinarization(img)), _ => HasImage);
-            DilationCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplyDilation(img)), _ => HasImage);
-            ErosionCommand = new RelayCommand(_ => ApplyFilter(img => _imageProcessor.ApplyErosion(img)), _ => HasImage);
+            BinarizationCommand = new RelayCommand(_ => ApplyBinarization(), _ => HasImage);
+            DilationCommand = new RelayCommand(_ => ApplyDilation(), _ => HasImage);
+            ErosionCommand = new RelayCommand(_ => ApplyErosion(), _ => HasImage);
 
             // Placeholder Commands
             MedianFilterCommand = new RelayCommand(_ => MessageBox.Show("미디언 필터 실행 (구현 필요)"));
@@ -112,7 +120,46 @@ namespace ImageProcessing.ViewModels
             OpenSettingsCommand = new RelayCommand(_ => MessageBox.Show("환경 설정 창 열기 (구현 필요)"));
         }
 
-        // --- Command Methods ---
+        // --- Public Methods ---
+        public void StartSelection(Point startPoint)
+        {
+            if (!HasImage) return;
+            _isSelecting = true;
+            _startPoint = startPoint;
+            SelectionRect = new Rect(startPoint, startPoint);
+            SelectionVisibility = Visibility.Visible;
+        }
+
+        public void UpdateSelection(Point currentPoint)
+        {
+            if (!_isSelecting) return;
+            var x = Math.Min(_startPoint.X, currentPoint.X);
+            var y = Math.Min(_startPoint.Y, currentPoint.Y);
+            var width = Math.Abs(_startPoint.X - currentPoint.X);
+            var height = Math.Abs(_startPoint.Y - currentPoint.Y);
+            SelectionRect = new Rect(x, y, width, height);
+        }
+
+        public void EndSelection()
+        {
+            _isSelecting = false;
+            if (SelectionRect.Width < 2 || SelectionRect.Height < 2)
+            {
+                SelectionVisibility = Visibility.Collapsed;
+            }
+        }
+        // 좌표 업데이트 메서드 추가
+        public void UpdateCoordinates(Point currentPoint)
+        {
+            CurrentCoordinates = $"X: {currentPoint.X:F0}, Y: {currentPoint.Y:F0}";
+        }
+
+        // 좌표 초기화 메서드 추가
+        public void ClearCoordinates()
+        {
+            CurrentCoordinates = string.Empty;
+        }
+        // --- Private Methods ---
         private void ApplyFilter(Func<BitmapImage, BitmapImage> filter)
         {
             if (LoadedImage == null) return;
@@ -176,37 +223,62 @@ namespace ImageProcessing.ViewModels
                 _originalImageViewer.Activate();
             }
         }
-
-        // --- Mouse Event Handlers for Selection ---
-        public void StartSelection(Point startPoint)
+        private void ApplyBinarization()
         {
-            if (!HasImage) return;
-            _isSelecting = true;
-            _startPoint = startPoint;
-            SelectionRect = new Rect(startPoint, startPoint);
-            SelectionVisibility = Visibility.Visible;
-        }
+            var dialog = new ParameterInputDialog("이진화", "임계값을 입력하세요 (0-255):", "128");
 
-        public void UpdateSelection(Point currentPoint)
-        {
-            if (!_isSelecting) return;
-            var x = Math.Min(_startPoint.X, currentPoint.X);
-            var y = Math.Min(_startPoint.Y, currentPoint.Y);
-            var width = Math.Abs(_startPoint.X - currentPoint.X);
-            var height = Math.Abs(_startPoint.Y - currentPoint.Y);
-            SelectionRect = new Rect(x, y, width, height);
-        }
-
-        public void EndSelection()
-        {
-            _isSelecting = false;
-            if (SelectionRect.Width < 2 || SelectionRect.Height < 2)
+            // ShowDialog()가 true를 반환하면 '확인' 버튼을 누른 것
+            if (dialog.ShowDialog() == true)
             {
-                SelectionVisibility = Visibility.Collapsed;
+                // 사용자가 입력한 값을 정수로 변환 (실패 시 기본값 사용)
+                if (int.TryParse(dialog.UserInput, out int threshold))
+                {
+                    // TODO: ImageProcessor와 C++ 엔진에 threshold 값을 전달
+                    MessageBox.Show($"이진화 실행! 임계값: {threshold}");
+                    // 예시: LoadedImage = _imageProcessor.ApplyBinarization(LoadedImage, threshold);
+                }
+                else
+                {
+                    MessageBox.Show("올바른 숫자를 입력해주세요.");
+                }
             }
         }
 
-        // --- Selection Command Implementations ---
+        // 팽창 적용 메소드
+        private void ApplyDilation()
+        {
+            var dialog = new ParameterInputDialog("팽창", "커널 크기를 입력하세요 (홀수):", "3");
+            if (dialog.ShowDialog() == true)
+            {
+                if (int.TryParse(dialog.UserInput, out int kernelSize))
+                {
+                    MessageBox.Show($"팽창 실행! 커널 크기: {kernelSize}x{kernelSize}");
+                    // 예시: LoadedImage = _imageProcessor.ApplyDilation(LoadedImage, kernelSize);
+                }
+                else
+                {
+                    MessageBox.Show("올바른 숫자를 입력해주세요.");
+                }
+            }
+        }
+
+        // 침식 적용 메소드 (팽창과 거의 동일)
+        private void ApplyErosion()
+        {
+            var dialog = new ParameterInputDialog("침식", "커널 크기를 입력하세요 (홀수):", "3");
+            if (dialog.ShowDialog() == true)
+            {
+                if (int.TryParse(dialog.UserInput, out int kernelSize))
+                {
+                    MessageBox.Show($"침식 실행! 커널 크기: {kernelSize}x{kernelSize}");
+                    // 예시: LoadedImage = _imageProcessor.ApplyErosion(LoadedImage, kernelSize);
+                }
+                else
+                {
+                    MessageBox.Show("올바른 숫자를 입력해주세요.");
+                }
+            }
+        }
         private bool HasSelection() => HasImage && SelectionVisibility == Visibility.Visible;
 
         private void CutSelection()
