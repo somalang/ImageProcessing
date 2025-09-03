@@ -1,9 +1,10 @@
-﻿using System.IO;
+﻿using ImageProcessingEngine;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Collections.Generic;
-using ImageProcessingEngine;
-using System;
 
 namespace ImageProcessing.Services
 {
@@ -57,6 +58,91 @@ namespace ImageProcessing.Services
                 _currentImage = result;
                 return _currentImage;
             }
+        }
+        public BitmapSource Crop(BitmapSource source, Rect rect)
+        {
+            if (rect.IsEmpty || rect.Width == 0 || rect.Height == 0)
+            {
+                return null;
+            }
+
+            // Rect가 이미지 경계를 벗어나지 않도록 조정
+            rect.Intersect(new Rect(0, 0, source.PixelWidth, source.PixelHeight));
+
+            if (rect.IsEmpty)
+            {
+                return null;
+            }
+
+            return new CroppedBitmap(source, new Int32Rect((int)rect.X, (int)rect.Y, (int)rect.Width, (int)rect.Height));
+        }
+
+        public BitmapSource ClearSelection(BitmapSource source, Rect rect)
+        {
+            
+
+            if (rect.IsEmpty || rect.Width == 0 || rect.Height == 0)
+            {
+                return source;
+            }
+
+            // Rect가 이미지 경계를 벗어나지 않도록 조정
+            rect.Intersect(new Rect(0, 0, source.PixelWidth, source.PixelHeight));
+
+            if (rect.IsEmpty)
+            {
+                return source;
+            }
+            var formatted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+            var writeableBitmap = new WriteableBitmap(formatted);
+
+            //var writeableBitmap = new WriteableBitmap(source);
+            int stride = writeableBitmap.PixelWidth * (writeableBitmap.Format.BitsPerPixel / 8);
+            byte[] pixelData = new byte[stride * writeableBitmap.PixelHeight];
+            writeableBitmap.CopyPixels(pixelData, stride, 0);
+
+            for (int y = (int)rect.Y; y < (int)(rect.Y + rect.Height); y++)
+            {
+                for (int x = (int)rect.X; x < (int)(rect.X + rect.Width); x++)
+                {
+                    int index = y * stride + x * 4; // BGRA32 가정
+                    //pixelData[index] = 255;     // Blue - 흰색
+                    //pixelData[index + 1] = 255; // Green - 흰색
+                    //pixelData[index + 2] = 255; // Red - 흰색
+                    //pixelData[index + 3] = 255; // Alpha - 불투명
+
+                    // 투명하게 처리
+                    //pixelData[index] = 0;       // Blue
+                    //pixelData[index + 1] = 0;   // Green
+                    //pixelData[index + 2] = 0;   // Red
+                    //pixelData[index + 3] = 0;   // Alpha - 투명
+
+                    pixelData[index] = 0;       // Blue
+                    pixelData[index + 1] = 0;   // Green
+                    pixelData[index + 2] = 255; // Red
+                    pixelData[index + 3] = 255; // Opaque
+
+                }
+            }
+
+            writeableBitmap.WritePixels(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight), pixelData, stride, 0);
+            return writeableBitmap;
+        }
+        public BitmapSource Paste(BitmapSource destination, BitmapSource source, Point location)
+        {
+            var drawingVisual = new DrawingVisual();
+            using (var drawingContext = drawingVisual.RenderOpen())
+            {
+                // 기존 이미지 그리기
+                drawingContext.DrawImage(destination, new Rect(0, 0, destination.PixelWidth, destination.PixelHeight));
+                // 붙여넣을 이미지 그리기
+                drawingContext.DrawImage(source, new Rect(location.X, location.Y, source.PixelWidth, source.PixelHeight));
+            }
+
+            var renderTargetBitmap = new RenderTargetBitmap(destination.PixelWidth, destination.PixelHeight, destination.DpiX, destination.DpiY, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(drawingVisual);
+            renderTargetBitmap.Freeze();
+            return renderTargetBitmap;
         }
 
         // ------------------ 기존 필터 ------------------

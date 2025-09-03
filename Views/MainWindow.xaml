@@ -30,6 +30,7 @@
                 <Separator/>
                 <MenuItem Header="오려두기" Command="{Binding CutSelectionCommand}" />
                 <MenuItem Header="복제" Command="{Binding CopySelectionCommand}" />
+                <MenuItem Header="붙여넣기" Command="{Binding PasteCommand}" />
                 <MenuItem Header="삭제" Command="{Binding DeleteSelectionCommand}" />
             </MenuItem>
             <MenuItem Header="보기">
@@ -73,8 +74,10 @@
         <Grid Margin="5">
             <Border BorderBrush="Gray" BorderThickness="1">
                 <Image x:Name="DisplayImage"
-                       Source="{Binding LoadedImage}"
-                       Stretch="Uniform" />
+                   Source="{Binding LoadedImage}"
+                   Stretch="Uniform"
+                   SizeChanged="DisplayImage_SizeChanged" />
+
             </Border>
             <!-- Canvas에 MouseDown, MouseUp 이벤트 핸들러를 추가하고 Rectangle을 내부에 추가합니다. -->
             <Canvas Background="Transparent"

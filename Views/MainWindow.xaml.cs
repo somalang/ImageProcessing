@@ -49,5 +49,13 @@ namespace ImageProcessing.Views
                 viewModel.ClearCoordinates();
             }
         }
+        private void DisplayImage_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (DataContext is MainViewModel vm)
+            {
+                vm.ImageControlSize = new Size(DisplayImage.ActualWidth, DisplayImage.ActualHeight);
+            }
+        }
+
     }
 }
