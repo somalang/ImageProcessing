@@ -80,24 +80,24 @@ namespace ImageProcessing.Services
             return ProcessImage(source, (pixels, width, height) => _engine.ApplyLaplacian(pixels, width, height));
         }
 
-        public BitmapImage ApplyBinarization(BitmapImage source)
+        public BitmapImage ApplyBinarization(BitmapImage source, int param=128)
         {
-            return ProcessImage(source, (pixels, width, height) => _engine.ApplyBinarization(pixels, width, height, 128));
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyBinarization(pixels, width, height, param));
         }
 
-        public BitmapImage ApplyDilation(BitmapImage source)
+        public BitmapImage ApplyDilation(BitmapImage source, int param = 3)
         {
-            return ProcessImage(source, (pixels, width, height) => _engine.ApplyDilation(pixels, width, height, 3));
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyDilation(pixels, width, height, param));
         }
 
-        public BitmapImage ApplyErosion(BitmapImage source)
+        public BitmapImage ApplyErosion(BitmapImage source, int param = 3)
         {
-            return ProcessImage(source, (pixels, width, height) => _engine.ApplyErosion(pixels, width, height, 3));
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyErosion(pixels, width, height, param));
         }
 
-        public BitmapImage ApplyMedianFilter(BitmapImage source)
+        public BitmapImage ApplyMedianFilter(BitmapImage source, int param = 3)
         {
-            return ProcessImage(source, (pixels, width, height) => _engine.ApplyMedianFilter(pixels, width, height, 3));
+            return ProcessImage(source, (pixels, width, height) => _engine.ApplyMedianFilter(pixels, width, height, param));
         }
 
         // ------------------ FFT 관련 ------------------

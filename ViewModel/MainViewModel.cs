@@ -65,6 +65,22 @@ namespace ImageProcessing.ViewModel
             set => SetProperty(ref _selectionRect, value);
         }
 
+        // --- 필터 파라미터 속성 ---
+        private int _binarizationThreshold = 128;
+        public int BinarizationThreshold
+        {
+            get => _binarizationThreshold;
+            set => SetProperty(ref _binarizationThreshold, value);
+        }
+
+        private int _kernelSize = 3;
+        public int KernelSize
+        {
+            get => _kernelSize;
+            set => SetProperty(ref _kernelSize, value);
+        }
+
+
         // --- Command 속성 ---
         public ICommand LoadImageCommand { get; }
         public ICommand SaveImageCommand { get; }
@@ -116,13 +132,23 @@ namespace ImageProcessing.ViewModel
             SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null);
 
             ApplyGrayscaleCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyGrayscale(CurrentBitmapImage), "Grayscale"));
-            ApplyGaussianBlurCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"));
             ApplySobelCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplySobel(CurrentBitmapImage), "Sobel"));
             ApplyLaplacianCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyLaplacian(CurrentBitmapImage), "Laplacian"));
-            ApplyBinarizationCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyBinarization(CurrentBitmapImage), "Binarization"));
-            ApplyDilationCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyDilation(CurrentBitmapImage), "Dilation"));
-            ApplyErosionCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyErosion(CurrentBitmapImage), "Erosion"));
-            ApplyMedianFilterCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyMedianFilter(CurrentBitmapImage), "Median Filter"));
+            
+            ApplyGaussianBlurCommand = new RelayCommand(
+    _ => ApplyFilter(p => p.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"));
+
+            ApplyBinarizationCommand = new RelayCommand(_ => ExecuteWithParameter("Binarization",
+    (p, value) => p.ApplyBinarization(CurrentBitmapImage, value)));
+
+            ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation",
+                (p, value) => p.ApplyDilation(CurrentBitmapImage, value)));
+
+            ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion",
+                (p, value) => p.ApplyErosion(CurrentBitmapImage, value)));
+
+            ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter",
+                (p, value) => p.ApplyMedianFilter(CurrentBitmapImage, value)));
 
             FFTCommand = new RelayCommand(_ => ApplyFilter(p => p.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null);
             IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData);
@@ -206,6 +232,35 @@ namespace ImageProcessing.ViewModel
             if (filePath != null && CurrentBitmapImage != null)
             {
                 await _fileService.SaveImage(CurrentBitmapImage, filePath);
+            }
+        }
+        private void ExecuteWithParameter(string operationName, Func<ImageProcessor, int, BitmapImage> filterAction)
+        {
+            if (CurrentBitmapImage == null) return;
+
+            // 다이얼로그 띄우기
+            var dialog = new ParameterInputDialog($"{operationName} Parameter",
+                                                  "값을 입력하세요:",
+                                                  "3"); // 기본값 3
+            dialog.Owner = Application.Current.MainWindow;
+
+            if (dialog.ShowDialog() == true)
+            {
+                if (int.TryParse(dialog.InputValue, out int param))
+                {
+                    var stopwatch = Stopwatch.StartNew();
+                    CurrentBitmapImage = filterAction(_imageProcessor, param);
+                    stopwatch.Stop();
+
+                    LoadedImage = CurrentBitmapImage;
+                    long elapsedMs = stopwatch.ElapsedMilliseconds;
+                    ProcessingTime = $"Process Time: {elapsedMs} ms";
+                    _logService.AddLog(operationName, elapsedMs);
+                }
+                else
+                {
+                    MessageBox.Show("숫자를 입력하세요.", "잘못된 입력", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
         }
 
