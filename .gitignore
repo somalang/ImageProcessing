@@ -1,5 +1,5 @@
 # .gitignore
-
+debug/
 .vs/
 obj/
 bin/

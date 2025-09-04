@@ -353,6 +353,18 @@ namespace ImageProcessing.ViewModel
         /// <summary>
         /// UI 컨트롤의 좌표를 실제 이미지의 픽셀 좌표로 변환합니다.
         /// </summary>
+        private double baseScale;
+
+        private void InitializeBaseScale(Size controlSize, BitmapSource originalImage)
+        {
+            double controlWidth = controlSize.Width;
+            double controlHeight = controlSize.Height;
+            double imageWidth = originalImage.PixelWidth;
+            double imageHeight = originalImage.PixelHeight;
+
+            baseScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
+        }
+
         private Point ToImageCoordinates(Point controlPoint, Size controlSize, BitmapSource imageSource)
         {
             if (imageSource == null || controlSize.Width == 0 || controlSize.Height == 0)
@@ -363,24 +375,21 @@ namespace ImageProcessing.ViewModel
             double imageWidth = imageSource.PixelWidth;
             double imageHeight = imageSource.PixelHeight;
 
-            // Stretch="Uniform" 스케일 계산
-            double scale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
-            if (scale == 0) return new Point(0, 0);
+            // baseScale은 고정, ZoomLevel만 반영
+            double effectiveScale = baseScale * ZoomLevel;
 
-            // 이미지 컨트롤 내에서 이미지의 실제 위치 (여백) 계산
-            double xOffset = (controlWidth - imageWidth * scale) / 2;
-            double yOffset = (controlHeight - imageHeight * scale) / 2;
+            double xOffset = (controlWidth - imageWidth * effectiveScale) / 2;
+            double yOffset = (controlHeight - imageHeight * effectiveScale) / 2;
 
-            // 컨트롤 좌표에서 여백을 빼고 스케일로 나누어 실제 이미지 좌표 계산
-            double x = (controlPoint.X - xOffset) / scale;
-            double y = (controlPoint.Y - yOffset) / scale;
+            double x = (controlPoint.X - xOffset) / effectiveScale;
+            double y = (controlPoint.Y - yOffset) / effectiveScale;
 
-            // 이미지 경계를 벗어나지 않도록 조정
             x = Math.Max(0, Math.Min(x, imageWidth));
             y = Math.Max(0, Math.Min(y, imageHeight));
 
             return new Point(x, y);
         }
+
 
         /// <summary>
         /// UI 컨트롤의 선택 영역(Rect)을 실제 이미지의 픽셀 영역(Rect)으로 변환합니다.
@@ -504,8 +513,15 @@ namespace ImageProcessing.ViewModel
         public void StartSelection(Point startPoint)
         {
             _isSelecting = true;
-            _startPoint = startPoint;
-            SelectionRect = new Rect(startPoint, new Size(0, 0));
+
+            // UI 좌표 → 이미지 좌표
+            var imgPoint = ToImageCoordinates(startPoint, ImageControlSize, CurrentBitmapImage);
+
+            // 이미지 좌표 → 다시 UI 좌표 (보정된 값)
+            var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+
+            _startPoint = uiPoint;
+            SelectionRect = new Rect(uiPoint, new Size(0, 0));
             SelectionVisibility = Visibility.Visible;
         }
 
@@ -513,13 +529,18 @@ namespace ImageProcessing.ViewModel
         {
             if (_isSelecting)
             {
-                var x = Math.Min(_startPoint.X, currentPoint.X);
-                var y = Math.Min(_startPoint.Y, currentPoint.Y);
-                var width = Math.Abs(_startPoint.X - currentPoint.X);
-                var height = Math.Abs(_startPoint.Y - currentPoint.Y);
+                var imgPoint = ToImageCoordinates(currentPoint, ImageControlSize, CurrentBitmapImage);
+                var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+
+                var x = Math.Min(_startPoint.X, uiPoint.X);
+                var y = Math.Min(_startPoint.Y, uiPoint.Y);
+                var width = Math.Abs(_startPoint.X - uiPoint.X);
+                var height = Math.Abs(_startPoint.Y - uiPoint.Y);
+
                 SelectionRect = new Rect(x, y, width, height);
             }
         }
+
 
         public void EndSelection()
         {

@@ -79,29 +79,27 @@
         <Grid Margin="5">
             <Border BorderBrush="Gray" BorderThickness="1">
                 <ScrollViewer x:Name="ImageScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
-                    <Grid>
-                        <Image x:Name="DisplayImage" Source="{Binding LoadedImage}" Stretch="Uniform" 
-       MaxWidth="1400" MaxHeight="700" SizeChanged="DisplayImage_SizeChanged">
+                    <Grid HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <Grid.LayoutTransform>
+                            <ScaleTransform x:Name="ImageScaleTransform"/>
+                        </Grid.LayoutTransform>
 
-                        <Image.LayoutTransform>
-                                <ScaleTransform x:Name="ImageScaleTransform" ScaleX="1.0" ScaleY="1.0"/>
-                            </Image.LayoutTransform>
-                        </Image>
+                        <Image x:Name="DisplayImage" Source="{Binding LoadedImage}" Stretch="Uniform" 
+          MaxWidth="1400" MaxHeight="700" SizeChanged="DisplayImage_SizeChanged"/>
                         <Canvas Background="Transparent"
-                MouseDown="Canvas_MouseDown"
-                MouseMove="Canvas_MouseMove"
-                MouseUp="Canvas_MouseUp"
-                MouseLeave="Canvas_MouseLeave">
-                            <Rectangle Stroke="Cyan"
-                       StrokeThickness="2"
-                       Fill="#5500FFFF"
-                       Visibility="{Binding SelectionVisibility}"
-                       Canvas.Left="{Binding SelectionRect.X}"
-                       Canvas.Top="{Binding SelectionRect.Y}"
-                       Width="{Binding SelectionRect.Width}"
-                       Height="{Binding SelectionRect.Height}" />
+           MouseDown="Canvas_MouseDown"
+           MouseMove="Canvas_MouseMove"
+           MouseUp="Canvas_MouseUp"
+           MouseLeave="Canvas_MouseLeave">
+                            <Rectangle Stroke="Cyan" StrokeThickness="2" Fill="#5500FFFF"
+                  Visibility="{Binding SelectionVisibility}"
+                  Canvas.Left="{Binding SelectionRect.X}"
+                  Canvas.Top="{Binding SelectionRect.Y}"
+                  Width="{Binding SelectionRect.Width}"
+                  Height="{Binding SelectionRect.Height}" />
                         </Canvas>
                     </Grid>
+
                 </ScrollViewer>
             </Border>
         </Grid>
