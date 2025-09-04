@@ -106,16 +106,16 @@ namespace ImageProcessing.Services
                     int index = y * stride + x * 4; // BGRA32 가정
 
                     // 투명하게 처리
-                    //pixelData[index] = 0;       // Blue
-                    //pixelData[index + 1] = 0;   // Green
-                    //pixelData[index + 2] = 0;   // Red
-                    //pixelData[index + 3] = 0;   // Alpha - 투명
-
-                    // 붉은색 처리 - 확인용
                     pixelData[index] = 0;       // Blue
                     pixelData[index + 1] = 0;   // Green
-                    pixelData[index + 2] = 255; // Red
-                    pixelData[index + 3] = 255; // Opaque
+                    pixelData[index + 2] = 0;   // Red
+                    pixelData[index + 3] = 0;   // Alpha - 투명
+
+                    // 붉은색 처리 - 확인용
+                    //pixelData[index] = 0;       // Blue
+                    //pixelData[index + 1] = 0;   // Green
+                    //pixelData[index + 2] = 255; // Red
+                    //pixelData[index + 3] = 255; // Opaque
 
                 }
             }

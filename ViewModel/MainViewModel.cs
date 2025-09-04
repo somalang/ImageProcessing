@@ -30,9 +30,9 @@ namespace ImageProcessing.ViewModel
         private readonly ClipboardService _clipboardService;
 
         // --- 미리보기 관련 필드 ---
-        private BitmapImage _previewImage;
-        private bool _isPreviewing;
-        private Action _applyAction;
+        //private BitmapImage _previewImage;
+        //private bool _isPreviewing;
+        //private Action _applyAction;
 
 
         // --- 로그 창 인스턴스 관리를 위한 필드 추가 ---
@@ -80,8 +80,8 @@ namespace ImageProcessing.ViewModel
         }
 
         // --- 미리보기 관련 속성 ---
-        public BitmapImage PreviewImage { get => _previewImage; set => SetProperty(ref _previewImage, value); }
-        public bool IsPreviewing { get => _isPreviewing; set => SetProperty(ref _isPreviewing, value); }
+        //public BitmapImage PreviewImage { get => _previewImage; set => SetProperty(ref _previewImage, value); }
+        //public bool IsPreviewing { get => _isPreviewing; set => SetProperty(ref _isPreviewing, value); }
 
         // --- 줌 관련 속성 ---
         private double zoomLevel = 1.0;
@@ -127,8 +127,8 @@ namespace ImageProcessing.ViewModel
         public ICommand TemplateMatchCommand { get; }
         public ICommand OpenSettingsCommand { get; }
         public ICommand ShowLogWindowCommand { get; }
-        public ICommand ApplyPreviewCommand { get; }
-        public ICommand CancelPreviewCommand { get; }
+        //public ICommand ApplyPreviewCommand { get; }
+        //public ICommand CancelPreviewCommand { get; }
         public ICommand ZoomInCommand { get; }
         public ICommand ZoomOutCommand { get; }
 
@@ -153,93 +153,46 @@ namespace ImageProcessing.ViewModel
             SelectionRect = new Rect(0, 0, 0, 0);
 
             LoadImageCommand = new RelayCommand(async _ => await LoadImageAsync());
-            SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null && !IsPreviewing);
+            SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null);
 
             // 필터 Command 초기화 (미리보기 방식 적용)
-            ApplyGrayscaleCommand = new RelayCommand(_ => ShowPreview(() => _imageProcessor.ApplyGrayscale(CurrentBitmapImage), "Grayscale"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplySobelCommand = new RelayCommand(_ => ShowPreview(() => _imageProcessor.ApplySobel(CurrentBitmapImage), "Sobel"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyLaplacianCommand = new RelayCommand(_ => ShowPreview(() => _imageProcessor.ApplyLaplacian(CurrentBitmapImage), "Laplacian"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyGaussianBlurCommand = new RelayCommand(_ => ShowPreview(() => _imageProcessor.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyBinarizationCommand = new RelayCommand(_ => ExecuteWithParameter("Binarization", (p, value) => p.ApplyBinarization(CurrentBitmapImage, value), "128"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation", (p, value) => p.ApplyDilation(CurrentBitmapImage, value), "3"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion", (p, value) => p.ApplyErosion(CurrentBitmapImage, value), "3"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter", (p, value) => p.ApplyMedianFilter(CurrentBitmapImage, value), "3"), _ => CurrentBitmapImage != null && !IsPreviewing);
+            ApplyGrayscaleCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyGrayscale(CurrentBitmapImage), "Grayscale"));
+            ApplySobelCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplySobel(CurrentBitmapImage), "Sobel"));
+            ApplyLaplacianCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyLaplacian(CurrentBitmapImage), "Laplacian"));
+            ApplyGaussianBlurCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"));
+            ApplyBinarizationCommand = new RelayCommand(_ => ExecuteWithParameter("Binarization", (p, value) => p.ApplyBinarization(CurrentBitmapImage, value), "128"));
+            ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation", (p, value) => p.ApplyDilation(CurrentBitmapImage, value), "3"));
+            ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion", (p, value) => p.ApplyErosion(CurrentBitmapImage, value), "3"));
+            ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter", (p, value) => p.ApplyMedianFilter(CurrentBitmapImage, value), "3"));
 
-            FFTCommand = new RelayCommand(_ => ShowPreview(() => _imageProcessor.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null && !IsPreviewing);
-            IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData && !IsPreviewing);
+            FFTCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null);
+            IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData);
 
+            UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo);
+            RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo);
 
-            UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo && !IsPreviewing);
-            RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo && !IsPreviewing);
-
-            ShowOriginalImageCommand = new RelayCommand(_ => ShowOriginalImage(), _ => _originalImage != null && !IsPreviewing);
-            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null && !IsPreviewing);
-            ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync(), _ => (_originalImage != null || !string.IsNullOrEmpty(_lastImagePath)) && !IsPreviewing);
+            ShowOriginalImageCommand = new RelayCommand(_ => ShowOriginalImage(), _ => _originalImage != null);
+            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null);
+            ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync(), _ => _originalImage != null || !string.IsNullOrEmpty(_lastImagePath));
             ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
 
             ShowLogWindowCommand = new RelayCommand(_ => ShowLogWindow());
 
             // --- 편집 Command 초기화 ---
-            CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasValidSelection() && !IsPreviewing);
-            CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasValidSelection() && !IsPreviewing);
-            DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasValidSelection() && !IsPreviewing);
-            PasteCommand = new RelayCommand(_ => ExecutePaste(), _ => CurrentBitmapImage != null && _clipboardService.GetImage() != null && !IsPreviewing);
+            CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasValidSelection());
+            CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasValidSelection());
+            DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasValidSelection());
+            PasteCommand = new RelayCommand(_ => ExecutePaste(), _ => CurrentBitmapImage != null && _clipboardService.GetImage() != null);
 
             TemplateMatchCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
 
-            // --- 미리보기 Command 초기화 ---
-            ApplyPreviewCommand = new RelayCommand(_ => ApplyPreview());
-            CancelPreviewCommand = new RelayCommand(_ => CancelPreview());
-
             // --- 줌 Command 초기화 ---
-            //ZoomInCommand = new RelayCommand(_ => ZoomLevel += 0.1, _ => CurrentBitmapImage != null && !IsPreviewing);
-            //ZoomOutCommand = new RelayCommand(_ => ZoomLevel -= 0.1, _ => CurrentBitmapImage != null && !IsPreviewing);
             ZoomInCommand = new RelayCommand(_ => ZoomLevel += 0.1);
             ZoomOutCommand = new RelayCommand(_ => ZoomLevel -= 0.1);
         }
         
-        // --- 미리보기 관련 메서드 ---
-        private void ShowPreview(Func<BitmapImage> filterAction, string operationName)
-        {
-            if (CurrentBitmapImage == null) return;
-
-            var stopwatch = Stopwatch.StartNew();
-            var newImage = filterAction();
-            stopwatch.Stop();
-
-            if (newImage != null)
-            {
-                PreviewImage = newImage;
-                IsPreviewing = true;
-                long elapsedMs = stopwatch.ElapsedMilliseconds;
-                ProcessingTime = $"Process Time: {elapsedMs} ms";
-                _applyAction = () =>
-                {
-                    CurrentBitmapImage = PreviewImage;
-                    LoadedImage = CurrentBitmapImage;
-                    _logService.AddLog(operationName, elapsedMs);
-                };
-            }
-        }
         
-        private void ApplyPreview()
-        {
-            _applyAction?.Invoke();
-            IsPreviewing = false;
-            PreviewImage = null;
-            _applyAction = null;
-        }
-
-        private void CancelPreview()
-        {
-            IsPreviewing = false;
-            PreviewImage = null;
-            _applyAction = null;
-            ProcessingTime = "Process Time: 0 ms";
-        }
-
-
         private bool HasValidSelection()
         {
             return CurrentBitmapImage != null &&
@@ -488,7 +441,7 @@ namespace ImageProcessing.ViewModel
             {
                 if (int.TryParse(dialog.InputValue, out int param))
                 {
-                    ShowPreview(() => filterAction(_imageProcessor, param), operationName);
+                    ApplyFilter(() => filterAction(_imageProcessor, param), operationName);
                 }
                 else
                 {
@@ -522,7 +475,7 @@ namespace ImageProcessing.ViewModel
                 MessageBox.Show("FFT 데이터가 없습니다. 먼저 푸리에 변환을 수행해주세요.", "경고", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            ShowPreview(() => _imageProcessor.ApplyIFFT(CurrentBitmapImage), "IFFT");
+            ApplyFilter(() => _imageProcessor.ApplyIFFT(CurrentBitmapImage), "IFFT");
             _imageProcessor.ClearFFTData();
         }
 

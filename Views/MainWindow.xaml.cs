@@ -10,13 +10,11 @@ namespace ImageProcessing.Views
         public MainWindow()
         {
             InitializeComponent();
-
             if (DataContext is MainViewModel vm)
             {
                 vm.PropertyChanged += ViewModel_PropertyChanged;
             }
         }
-
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
