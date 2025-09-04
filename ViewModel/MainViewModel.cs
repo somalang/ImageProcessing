@@ -10,99 +10,105 @@ using System.Diagnostics;
 using ImageProcessing.Models;
 using ImageProcessing.Views;
 using System.Windows.Media;
+using System.Linq;
 
 namespace ImageProcessing.ViewModel
 {
     public class MainViewModel : ViewModelBase
     {
         #region Constants
-        // 해당 클래스 내 사용되는 상수가 있다면 여기에 작성합니다.
+        private const double MIN_ZOOM_LEVEL = 0.5;
+        private const double MAX_ZOOM_LEVEL = 3.0;
+        private const double ZOOM_STEP = 0.1;
+        private const int MIN_SELECTION_SIZE = 5;
         #endregion
 
         #region Fields
-
         // 서비스 필드
-        private readonly ImageProcessor _imageProcessor;
-        private readonly FileService _fileService;
-        private readonly SettingService _settingService;
-        private readonly LogService _logService;
-        private readonly ClipboardService _clipboardService;
+        private readonly ImageProcessor imageProcessor;
+        private readonly FileService fileService;
+        private readonly SettingService settingService;
+        private readonly LogService logService;
+        private readonly ClipboardService clipboardService;
 
         // 이미지 관련 필드
-        private BitmapImage _currentBitmapImage;
-        private BitmapImage _originalImage;
-        private BitmapImage _loadedImage;
+        private BitmapImage currentBitmapImage;
+        private BitmapImage originalImage;
+        private BitmapImage loadedImage;
 
         // 선택 영역 및 좌표 관련 필드
-        private Visibility _selectionVisibility;
-        private Rect _selectionRect;
-        private bool _isSelecting;
-        private Point _startPoint;
-        private string _currentCoordinates;
+        private Visibility selectionVisibility;
+        private Rect selectionRect;
+        private bool isSelecting;
+        private Point startPoint;
+        private string currentCoordinates;
 
         // UI 및 상태 관련 필드
-        private Size _imageControlSize;
+        private Size imageControlSize;
         private double zoomLevel = 1.0;
 
         // 기타
-        private string _lastImagePath;
-        private string _processingTime;
+        private string lastImagePath;
+        private string processingTime;
 
         // 윈도우 인스턴스
-        private OriginalImageView _originalImageView;
-        private LogWindow _logWindow;
-
+        private OriginalImageView originalImageView;
+        private LogWindow logWindow;
         #endregion
 
         #region Properties
-
         // 이미지 관련 속성
         public BitmapImage CurrentBitmapImage
         {
-            get => _currentBitmapImage;
+            get => currentBitmapImage;
             set
             {
-                if (SetProperty(ref _currentBitmapImage, value))
+                if (SetProperty(ref currentBitmapImage, value))
                 {
                     OnPropertyChanged(nameof(CanUndo));
                     OnPropertyChanged(nameof(CanRedo));
                 }
             }
         }
+
         public BitmapImage LoadedImage
         {
-            get => _loadedImage;
-            set => SetProperty(ref _loadedImage, value);
+            get => loadedImage;
+            set => SetProperty(ref loadedImage, value);
         }
 
         // 선택 영역 및 좌표 속성
         public Visibility SelectionVisibility
         {
-            get => _selectionVisibility;
-            set => SetProperty(ref _selectionVisibility, value);
+            get => selectionVisibility;
+            set => SetProperty(ref selectionVisibility, value);
         }
+
         public Rect SelectionRect
         {
-            get => _selectionRect;
-            set => SetProperty(ref _selectionRect, value);
+            get => selectionRect;
+            set => SetProperty(ref selectionRect, value);
         }
+
         public string CurrentCoordinates
         {
-            get => _currentCoordinates;
-            set => SetProperty(ref _currentCoordinates, value);
+            get => currentCoordinates;
+            set => SetProperty(ref currentCoordinates, value);
         }
 
         // UI 및 상태 속성
         public Size ImageControlSize
         {
-            get => _imageControlSize;
-            set => SetProperty(ref _imageControlSize, value);
+            get => imageControlSize;
+            set => SetProperty(ref imageControlSize, value);
         }
+
         public string ProcessingTime
         {
-            get => _processingTime;
-            set => SetProperty(ref _processingTime, value);
+            get => processingTime;
+            set => SetProperty(ref processingTime, value);
         }
+
         public double ZoomLevel
         {
             get => zoomLevel;
@@ -110,104 +116,71 @@ namespace ImageProcessing.ViewModel
             {
                 if (SetProperty(ref zoomLevel, value))
                 {
-                    if (zoomLevel < 0.5) zoomLevel = 0.5;
-                    if (zoomLevel > 3.0) zoomLevel = 3.0;
+                    if (zoomLevel < MIN_ZOOM_LEVEL) zoomLevel = MIN_ZOOM_LEVEL;
+                    if (zoomLevel > MAX_ZOOM_LEVEL) zoomLevel = MAX_ZOOM_LEVEL;
                     OnPropertyChanged(nameof(ZoomPercentage));
                 }
             }
         }
+
         public string ZoomPercentage => $"{ZoomLevel * 100:0}%";
 
         // Undo/Redo 상태
-        public bool CanUndo => _imageProcessor.CanUndo;
-        public bool CanRedo => _imageProcessor.CanRedo;
+        public bool CanUndo => imageProcessor.CanUndo;
+        public bool CanRedo => imageProcessor.CanRedo;
 
         // Command 속성
-        public ICommand LoadImageCommand { get; }
-        public ICommand SaveImageCommand { get; }
-        public ICommand ShowOriginalImageCommand { get; }
-        public ICommand DeleteImageCommand { get; }
-        public ICommand ReloadImageCommand { get; }
-        public ICommand ExitCommand { get; }
-        public ICommand UndoCommand { get; }
-        public ICommand RedoCommand { get; }
-        public ICommand CutSelectionCommand { get; }
-        public ICommand CopySelectionCommand { get; }
-        public ICommand PasteCommand { get; }
-        public ICommand DeleteSelectionCommand { get; }
-        public ICommand ApplyGrayscaleCommand { get; }
-        public ICommand ApplyGaussianBlurCommand { get; }
-        public ICommand ApplyMedianFilterCommand { get; }
-        public ICommand ApplyLaplacianCommand { get; }
-        public ICommand ApplySobelCommand { get; }
-        public ICommand ApplyBinarizationCommand { get; }
-        public ICommand ApplyDilationCommand { get; }
-        public ICommand ApplyErosionCommand { get; }
-        public ICommand FFTCommand { get; }
-        public ICommand IFFTCommand { get; }
-        public ICommand TemplateMatchCommand { get; }
-        public ICommand OpenSettingsCommand { get; }
-        public ICommand ShowLogWindowCommand { get; }
-        public ICommand ZoomInCommand { get; }
-        public ICommand ZoomOutCommand { get; }
-
+        public ICommand LoadImageCommand { get; private set; }
+        public ICommand SaveImageCommand { get; private set; }
+        public ICommand ShowOriginalImageCommand { get; private set; }
+        public ICommand DeleteImageCommand { get; private set; }
+        public ICommand ReloadImageCommand { get; private set; }
+        public ICommand ExitCommand { get; private set; }
+        public ICommand UndoCommand { get; private set; }
+        public ICommand RedoCommand { get; private set; }
+        public ICommand CutSelectionCommand { get; private set; }
+        public ICommand CopySelectionCommand { get; private set; }
+        public ICommand PasteCommand { get; private set; }
+        public ICommand DeleteSelectionCommand { get; private set; }
+        public ICommand ApplyGrayscaleCommand { get; private set; }
+        public ICommand ApplyGaussianBlurCommand { get; private set; }
+        public ICommand ApplyMedianFilterCommand { get; private set; }
+        public ICommand ApplyLaplacianCommand { get; private set; }
+        public ICommand ApplySobelCommand { get; private set; }
+        public ICommand ApplyBinarizationCommand { get; private set; }
+        public ICommand ApplyDilationCommand { get; private set; }
+        public ICommand ApplyErosionCommand { get; private set; }
+        public ICommand FFTCommand { get; private set; }
+        public ICommand IFFTCommand { get; private set; }
+        public ICommand TemplateMatchCommand { get; private set; }
+        public ICommand OpenSettingsCommand { get; private set; }
+        public ICommand ShowLogWindowCommand { get; private set; }
+        public ICommand ZoomInCommand { get; private set; }
+        public ICommand ZoomOutCommand { get; private set; }
         #endregion
 
         #region Constructor
-
         public MainViewModel()
         {
-            _imageProcessor = new ImageProcessor();
-            _fileService = new FileService();
-            _settingService = new SettingService();
-            _logService = new LogService();
-            _clipboardService = new ClipboardService();
+            imageProcessor = new ImageProcessor();
+            fileService = new FileService();
+            settingService = new SettingService();
+            logService = new LogService();
+            clipboardService = new ClipboardService();
 
-            _lastImagePath = _settingService.GetLastImagePath();
+            lastImagePath = settingService.GetLastImagePath();
             ProcessingTime = "Process Time: 0 ms";
             CurrentCoordinates = "좌표: X=0, Y=0";
 
-            _isSelecting = false;
+            isSelecting = false;
             SelectionVisibility = Visibility.Collapsed;
             SelectionRect = new Rect(0, 0, 0, 0);
 
-            LoadImageCommand = new RelayCommand(async _ => await LoadImageAsync());
-            SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null);
-
-            ApplyGrayscaleCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyGrayscale(CurrentBitmapImage), "Grayscale"));
-            ApplySobelCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplySobel(CurrentBitmapImage), "Sobel"));
-            ApplyLaplacianCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyLaplacian(CurrentBitmapImage), "Laplacian"));
-            ApplyGaussianBlurCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"));
-            ApplyBinarizationCommand = new RelayCommand(_ => ExecuteWithParameter("Binarization", (p, value) => p.ApplyBinarization(CurrentBitmapImage, value), "128"));
-            ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation", (p, value) => p.ApplyDilation(CurrentBitmapImage, value), "3"));
-            ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion", (p, value) => p.ApplyErosion(CurrentBitmapImage, value), "3"));
-            ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter", (p, value) => p.ApplyMedianFilter(CurrentBitmapImage, value), "3"));
-            FFTCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null);
-            IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData);
-
-            UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo);
-            RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo);
-            ShowOriginalImageCommand = new RelayCommand(_ => ShowOriginalImage(), _ => _originalImage != null);
-            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null);
-            ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync(), _ => _originalImage != null || !string.IsNullOrEmpty(_lastImagePath));
-            ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
-            ShowLogWindowCommand = new RelayCommand(_ => ShowLogWindow());
-
-            CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasValidSelection());
-            CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasValidSelection());
-            DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasValidSelection());
-            PasteCommand = new RelayCommand(_ => ExecutePaste(), _ => CurrentBitmapImage != null && _clipboardService.GetImage() != null);
-            TemplateMatchCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-            OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
-
-            ZoomInCommand = new RelayCommand(_ => ZoomLevel += 0.1);
-            ZoomOutCommand = new RelayCommand(_ => ZoomLevel -= 0.1);
+            InitializeCommands();
         }
-
         #endregion
 
         #region Public Methods
-
         public void UpdateCoordinates(Point point)
         {
             CurrentCoordinates = $"좌표: X={point.X:F0}, Y={point.Y:F0}";
@@ -220,52 +193,85 @@ namespace ImageProcessing.ViewModel
 
         public void StartSelection(Point startPoint)
         {
-            _isSelecting = true;
-            var imgPoint = ToImageCoordinates(startPoint, ImageControlSize, CurrentBitmapImage);
-            var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
-            _startPoint = uiPoint;
+            isSelecting = true;
+            var imagePoint = ToImageCoordinates(startPoint, ImageControlSize, CurrentBitmapImage);
+            var uiPoint = ConvertImageRectToUiRect(new Rect(imagePoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+            this.startPoint = uiPoint;
             SelectionRect = new Rect(uiPoint, new Size(0, 0));
             SelectionVisibility = Visibility.Visible;
         }
 
         public void UpdateSelection(Point currentPoint)
         {
-            if (_isSelecting)
+            if (isSelecting)
             {
-                var imgPoint = ToImageCoordinates(currentPoint, ImageControlSize, CurrentBitmapImage);
-                var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
-                var x = Math.Min(_startPoint.X, uiPoint.X);
-                var y = Math.Min(_startPoint.Y, uiPoint.Y);
-                var width = Math.Abs(_startPoint.X - uiPoint.X);
-                var height = Math.Abs(_startPoint.Y - uiPoint.Y);
+                var imagePoint = ToImageCoordinates(currentPoint, ImageControlSize, CurrentBitmapImage);
+                var uiPoint = ConvertImageRectToUiRect(new Rect(imagePoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+                var x = Math.Min(startPoint.X, uiPoint.X);
+                var y = Math.Min(startPoint.Y, uiPoint.Y);
+                var width = Math.Abs(startPoint.X - uiPoint.X);
+                var height = Math.Abs(startPoint.Y - uiPoint.Y);
                 SelectionRect = new Rect(x, y, width, height);
             }
         }
 
         public void EndSelection()
         {
-            _isSelecting = false;
-            if (SelectionRect.Width < 5 || SelectionRect.Height < 5)
+            isSelecting = false;
+            if (SelectionRect.Width < MIN_SELECTION_SIZE || SelectionRect.Height < MIN_SELECTION_SIZE)
             {
                 ResetSelection();
             }
         }
-
         #endregion
 
         #region Private Methods
+        private void InitializeCommands()
+        {
+            LoadImageCommand = new RelayCommand(async _ => await LoadImageAsync());
+            SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null);
+
+            ApplyGrayscaleCommand = new RelayCommand(_ => ApplyFilter(() => imageProcessor.ApplyGrayscale(CurrentBitmapImage), "Grayscale"));
+            ApplySobelCommand = new RelayCommand(_ => ApplyFilter(() => imageProcessor.ApplySobel(CurrentBitmapImage), "Sobel"));
+            ApplyLaplacianCommand = new RelayCommand(_ => ApplyFilter(() => imageProcessor.ApplyLaplacian(CurrentBitmapImage), "Laplacian"));
+            ApplyGaussianBlurCommand = new RelayCommand(_ => ApplyFilter(() => imageProcessor.ApplyGaussianBlur(CurrentBitmapImage), "Gaussian Blur"));
+            ApplyBinarizationCommand = new RelayCommand(_ => ExecuteWithParameter("Binarization", (processor, value) => processor.ApplyBinarization(CurrentBitmapImage, value), "128"));
+            ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation", (processor, value) => processor.ApplyDilation(CurrentBitmapImage, value), "3"));
+            ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion", (processor, value) => processor.ApplyErosion(CurrentBitmapImage, value), "3"));
+            ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter", (processor, value) => processor.ApplyMedianFilter(CurrentBitmapImage, value), "3"));
+            FFTCommand = new RelayCommand(_ => ApplyFilter(() => imageProcessor.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null);
+            IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && imageProcessor.HasFFTData);
+
+            UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo);
+            RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo);
+            ShowOriginalImageCommand = new RelayCommand(_ => ShowOriginalImage(), _ => originalImage != null);
+            DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null);
+            ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync(), _ => originalImage != null || !string.IsNullOrEmpty(lastImagePath));
+            ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
+            ShowLogWindowCommand = new RelayCommand(_ => ShowLogWindow());
+
+            CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasValidSelection());
+            CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasValidSelection());
+            DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasValidSelection());
+            PasteCommand = new RelayCommand(_ => ExecutePaste(), _ => CurrentBitmapImage != null && clipboardService.GetImage() != null);
+            TemplateMatchCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
+            OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
+
+            ZoomInCommand = new RelayCommand(_ => ZoomLevel += ZOOM_STEP);
+            ZoomOutCommand = new RelayCommand(_ => ZoomLevel -= ZOOM_STEP);
+        }
 
         private bool HasValidSelection()
         {
             return CurrentBitmapImage != null &&
                    SelectionVisibility == Visibility.Visible &&
-                   SelectionRect.Width > 5 &&
-                   SelectionRect.Height > 5;
+                   SelectionRect.Width > MIN_SELECTION_SIZE &&
+                   SelectionRect.Height > MIN_SELECTION_SIZE;
         }
 
         private async Task LoadImageAsync()
         {
-            var filePath = _fileService.OpenImageFileDialog();
+            var filePath = fileService.OpenImageFileDialog();
             if (!string.IsNullOrEmpty(filePath))
             {
                 await LoadImageFromPathAsync(filePath);
@@ -274,52 +280,52 @@ namespace ImageProcessing.ViewModel
 
         private async Task LoadImageFromPathAsync(string filePath)
         {
-            LoadedImage = await _fileService.LoadImage(filePath);
-            _originalImage = LoadedImage;
+            LoadedImage = await fileService.LoadImage(filePath);
+            originalImage = LoadedImage;
             CurrentBitmapImage = LoadedImage;
-            _lastImagePath = filePath;
-            _settingService.SaveLastImagePath(filePath);
+            lastImagePath = filePath;
+            settingService.SaveLastImagePath(filePath);
         }
 
         private void ShowOriginalImage()
         {
-            if (_originalImageView == null)
+            if (originalImageView == null)
             {
-                _originalImageView = new OriginalImageView(_originalImage);
-                _originalImageView.Owner = Application.Current.MainWindow;
-                _originalImageView.Closed += (s, e) => _originalImageView = null;
-                _originalImageView.Show();
+                originalImageView = new OriginalImageView(originalImage);
+                originalImageView.Owner = Application.Current.MainWindow;
+                originalImageView.Closed += (sender, eventArgs) => originalImageView = null;
+                originalImageView.Show();
             }
             else
             {
-                _originalImageView.Activate();
+                originalImageView.Activate();
             }
         }
 
         private void DeleteImage()
         {
-            _originalImageView?.Close();
+            originalImageView?.Close();
             CurrentBitmapImage = null;
             LoadedImage = null;
-            _originalImage = null;
+            originalImage = null;
             ClearCoordinates();
             ResetSelection();
         }
 
         private async Task ReloadImageAsync()
         {
-            if (!string.IsNullOrEmpty(_lastImagePath) && File.Exists(_lastImagePath))
+            if (!string.IsNullOrEmpty(lastImagePath) && File.Exists(lastImagePath))
             {
-                await LoadImageFromPathAsync(_lastImagePath);
+                await LoadImageFromPathAsync(lastImagePath);
             }
         }
 
         private async Task SaveImageAsync()
         {
-            var filePath = _fileService.SaveImageFileDialog();
+            var filePath = fileService.SaveImageFileDialog();
             if (filePath != null && CurrentBitmapImage != null)
             {
-                await _fileService.SaveImage(CurrentBitmapImage, filePath);
+                await fileService.SaveImage(CurrentBitmapImage, filePath);
             }
         }
 
@@ -330,16 +336,16 @@ namespace ImageProcessing.ViewModel
             var imageSelectionRect = ConvertUiRectToImageRect(SelectionRect, ImageControlSize, CurrentBitmapImage);
             if (imageSelectionRect.IsEmpty) return;
 
-            var croppedImage = _imageProcessor.Crop(CurrentBitmapImage, imageSelectionRect);
+            var croppedImage = imageProcessor.Crop(CurrentBitmapImage, imageSelectionRect);
             if (croppedImage != null)
             {
-                _clipboardService.SetImage(croppedImage);
+                clipboardService.SetImage(croppedImage);
 
-                var clearedImage = _imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
+                var clearedImage = imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
                 CurrentBitmapImage = BitmapSourceToBitmapImage(clearedImage);
                 LoadedImage = CurrentBitmapImage;
                 ResetSelection();
-                _logService.AddLog("Cut Selection", 0);
+                logService.AddLog("Cut Selection", 0);
             }
         }
 
@@ -350,17 +356,17 @@ namespace ImageProcessing.ViewModel
             var imageSelectionRect = ConvertUiRectToImageRect(SelectionRect, ImageControlSize, CurrentBitmapImage);
             if (imageSelectionRect.IsEmpty) return;
 
-            var croppedImage = _imageProcessor.Crop(CurrentBitmapImage, imageSelectionRect);
+            var croppedImage = imageProcessor.Crop(CurrentBitmapImage, imageSelectionRect);
             if (croppedImage != null)
             {
-                _clipboardService.SetImage(croppedImage);
-                _logService.AddLog("Copy Selection", 0);
+                clipboardService.SetImage(croppedImage);
+                logService.AddLog("Copy Selection", 0);
             }
         }
 
         private void ExecutePaste()
         {
-            var clipboardImage = _clipboardService.GetImage();
+            var clipboardImage = clipboardService.GetImage();
             if (CurrentBitmapImage == null || clipboardImage == null) return;
 
             Point pasteLocation = HasValidSelection()
@@ -368,7 +374,7 @@ namespace ImageProcessing.ViewModel
                 : new Point(0, 0);
 
             var stopwatch = Stopwatch.StartNew();
-            var pastedImageSource = _imageProcessor.Paste(CurrentBitmapImage, clipboardImage, pasteLocation);
+            var pastedImageSource = imageProcessor.Paste(CurrentBitmapImage, clipboardImage, pasteLocation);
             stopwatch.Stop();
 
             CurrentBitmapImage = BitmapSourceToBitmapImage(pastedImageSource);
@@ -379,7 +385,7 @@ namespace ImageProcessing.ViewModel
             SelectionVisibility = Visibility.Visible;
 
             ProcessingTime = $"Process Time: {stopwatch.ElapsedMilliseconds} ms";
-            _logService.AddLog("Paste", stopwatch.ElapsedMilliseconds);
+            logService.AddLog("Paste", stopwatch.ElapsedMilliseconds);
         }
 
         private void DeleteSelection()
@@ -389,14 +395,12 @@ namespace ImageProcessing.ViewModel
             var imageSelectionRect = ConvertUiRectToImageRect(SelectionRect, ImageControlSize, CurrentBitmapImage);
             if (imageSelectionRect.IsEmpty) return;
 
-            var clearedImage = _imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
+            var clearedImage = imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
             CurrentBitmapImage = BitmapSourceToBitmapImage(clearedImage);
             LoadedImage = CurrentBitmapImage;
             ResetSelection();
-            _logService.AddLog("Delete Selection", 0);
+            logService.AddLog("Delete Selection", 0);
         }
-
-        #region Coordinate Conversion Helpers
 
         private Point ToImageCoordinates(Point controlPoint, Size controlSize, BitmapSource imageSource)
         {
@@ -458,8 +462,6 @@ namespace ImageProcessing.ViewModel
             return new Rect(uiX, uiY, uiWidth, uiHeight);
         }
 
-        #endregion
-
         private void ResetSelection()
         {
             SelectionVisibility = Visibility.Collapsed;
@@ -477,9 +479,9 @@ namespace ImageProcessing.ViewModel
 
             if (dialog.ShowDialog() == true)
             {
-                if (int.TryParse(dialog.InputValue, out int param))
+                if (int.TryParse(dialog.InputValue, out int parameter))
                 {
-                    ApplyFilter(() => filterAction(_imageProcessor, param), operationName);
+                    ApplyFilter(() => filterAction(imageProcessor, parameter), operationName);
                 }
                 else
                 {
@@ -501,48 +503,48 @@ namespace ImageProcessing.ViewModel
                 CurrentBitmapImage = newImage;
                 LoadedImage = CurrentBitmapImage;
                 ProcessingTime = $"Process Time: {stopwatch.ElapsedMilliseconds} ms";
-                _logService.AddLog(operationName, stopwatch.ElapsedMilliseconds);
+                logService.AddLog(operationName, stopwatch.ElapsedMilliseconds);
             }
         }
 
         private void ApplyIFFT()
         {
-            if (!_imageProcessor.HasFFTData)
+            if (!imageProcessor.HasFFTData)
             {
                 MessageBox.Show("FFT 데이터가 없습니다. 먼저 푸리에 변환을 수행해주세요.", "경고", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            ApplyFilter(() => _imageProcessor.ApplyIFFT(CurrentBitmapImage), "IFFT");
-            _imageProcessor.ClearFFTData();
+            ApplyFilter(() => imageProcessor.ApplyIFFT(CurrentBitmapImage), "IFFT");
+            imageProcessor.ClearFFTData();
         }
 
         private void ExecuteUndo()
         {
-            CurrentBitmapImage = _imageProcessor.Undo();
+            CurrentBitmapImage = imageProcessor.Undo();
             LoadedImage = CurrentBitmapImage;
         }
 
         private void ExecuteRedo()
         {
-            CurrentBitmapImage = _imageProcessor.Redo();
+            CurrentBitmapImage = imageProcessor.Redo();
             LoadedImage = CurrentBitmapImage;
         }
 
         private void ShowLogWindow()
         {
-            if (_logWindow == null)
+            if (logWindow == null)
             {
-                _logWindow = new LogWindow(_logService)
+                logWindow = new LogWindow(logService)
                 {
                     Owner = Application.Current.MainWindow
                 };
-                _logWindow.Closed += (s, e) => _logWindow = null;
-                _logWindow.Show();
+                logWindow.Closed += (sender, eventArgs) => logWindow = null;
+                logWindow.Show();
             }
             else
             {
-                _logWindow.Activate();
+                logWindow.Activate();
             }
         }
 
@@ -574,7 +576,6 @@ namespace ImageProcessing.ViewModel
                 return result;
             }
         }
-
         #endregion
     }
 }

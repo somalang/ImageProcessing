@@ -123,22 +123,44 @@ namespace ImageProcessing.Services
             writeableBitmap.WritePixels(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight), pixelData, stride, 0);
             return writeableBitmap;
         }
+
         public BitmapSource Paste(BitmapSource destination, BitmapSource source, Point location)
         {
-            var drawingVisual = new DrawingVisual();
-            using (var drawingContext = drawingVisual.RenderOpen())
-            {
-                // 기존 이미지 그리기
-                drawingContext.DrawImage(destination, new Rect(0, 0, destination.PixelWidth, destination.PixelHeight));
-                // 붙여넣을 이미지 그리기
-                drawingContext.DrawImage(source, new Rect(location.X, location.Y, source.PixelWidth, source.PixelHeight));
-            }
+            var writeable = new WriteableBitmap(destination);
 
-            var renderTargetBitmap = new RenderTargetBitmap(destination.PixelWidth, destination.PixelHeight, destination.DpiX, destination.DpiY, PixelFormats.Pbgra32);
-            renderTargetBitmap.Render(drawingVisual);
-            renderTargetBitmap.Freeze();
-            return renderTargetBitmap;
+            int destStride = writeable.PixelWidth * (writeable.Format.BitsPerPixel / 8);
+            byte[] destPixels = new byte[destStride * writeable.PixelHeight];
+            writeable.CopyPixels(destPixels, destStride, 0);
+
+            int srcStride = source.PixelWidth * (source.Format.BitsPerPixel / 8);
+            byte[] srcPixels = new byte[srcStride * source.PixelHeight];
+            source.CopyPixels(srcPixels, srcStride, 0);
+
+            for (int y = 0; y < source.PixelHeight; y++)
+            {
+                int destY = (int)location.Y + y;
+                if (destY >= writeable.PixelHeight) break;
+
+                for (int x = 0; x < source.PixelWidth; x++)
+                {
+                    int destX = (int)location.X + x;
+                    if (destX >= writeable.PixelWidth) break;
+
+                    int destIndex = destY * destStride + destX * 4;
+                    int srcIndex = y * srcStride + x * 4;
+
+                    // BGRA 그대로 복사
+                    destPixels[destIndex] = srcPixels[srcIndex];
+                    destPixels[destIndex + 1] = srcPixels[srcIndex + 1];
+                    destPixels[destIndex + 2] = srcPixels[srcIndex + 2];
+                    destPixels[destIndex + 3] = srcPixels[srcIndex + 3];
+                }
+            }
+            writeable.WritePixels(new Int32Rect(0, 0, writeable.PixelWidth, writeable.PixelHeight), destPixels, destStride, 0);
+            writeable.Freeze();
+            return writeable;
         }
+
 
         // ------------------ 기존 필터 ------------------
         public BitmapImage ApplyGrayscale(BitmapImage source)
