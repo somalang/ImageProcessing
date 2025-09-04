@@ -17,10 +17,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Views\Controls\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="ImageProcessingEngine\ImageProcessingEngine.vcxproj" />
   </ItemGroup>
 

@@ -79,8 +79,6 @@ namespace ImageProcessing.Services
 
         public BitmapSource ClearSelection(BitmapSource source, Rect rect)
         {
-            
-
             if (rect.IsEmpty || rect.Width == 0 || rect.Height == 0)
             {
                 return source;
@@ -106,10 +104,6 @@ namespace ImageProcessing.Services
                 for (int x = (int)rect.X; x < (int)(rect.X + rect.Width); x++)
                 {
                     int index = y * stride + x * 4; // BGRA32 가정
-                    //pixelData[index] = 255;     // Blue - 흰색
-                    //pixelData[index + 1] = 255; // Green - 흰색
-                    //pixelData[index + 2] = 255; // Red - 흰색
-                    //pixelData[index + 3] = 255; // Alpha - 불투명
 
                     // 투명하게 처리
                     //pixelData[index] = 0;       // Blue
@@ -117,6 +111,7 @@ namespace ImageProcessing.Services
                     //pixelData[index + 2] = 0;   // Red
                     //pixelData[index + 3] = 0;   // Alpha - 투명
 
+                    // 붉은색 처리 - 확인용
                     pixelData[index] = 0;       // Blue
                     pixelData[index + 1] = 0;   // Green
                     pixelData[index + 2] = 255; // Red

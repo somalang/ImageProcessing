@@ -1,4 +1,5 @@
 ﻿using ImageProcessing.ViewModel;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 
@@ -9,7 +10,13 @@ namespace ImageProcessing.Views
         public MainWindow()
         {
             InitializeComponent();
+
+            if (DataContext is MainViewModel vm)
+            {
+                vm.PropertyChanged += ViewModel_PropertyChanged;
+            }
         }
+
 
         private void Canvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -54,6 +61,18 @@ namespace ImageProcessing.Views
             if (DataContext is MainViewModel vm)
             {
                 vm.ImageControlSize = new Size(DisplayImage.ActualWidth, DisplayImage.ActualHeight);
+            }
+        }
+        private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(MainViewModel.ZoomLevel))
+            {
+                var vm = DataContext as MainViewModel;
+                if (vm != null)
+                {
+                    ImageScaleTransform.ScaleX = vm.ZoomLevel;
+                    ImageScaleTransform.ScaleY = vm.ZoomLevel;
+                }
             }
         }
 
