@@ -15,43 +15,48 @@ namespace ImageProcessing.ViewModel
 {
     public class MainViewModel : ViewModelBase
     {
-        // --- 기존 필드 ---
-        private BitmapImage _currentBitmapImage;
+        #region Constants
+        // 해당 클래스 내 사용되는 상수가 있다면 여기에 작성합니다.
+        #endregion
+
+        #region Fields
+
+        // 서비스 필드
         private readonly ImageProcessor _imageProcessor;
         private readonly FileService _fileService;
         private readonly SettingService _settingService;
-        private string _lastImagePath;
         private readonly LogService _logService;
-        private string _processingTime;
-        private BitmapImage _originalImage;
-        private Views.OriginalImageView _originalImageView;
-        private BitmapImage _loadedImage;
-        private string _currentCoordinates;
         private readonly ClipboardService _clipboardService;
 
-        // --- 미리보기 관련 필드 ---
-        //private BitmapImage _previewImage;
-        //private bool _isPreviewing;
-        //private Action _applyAction;
+        // 이미지 관련 필드
+        private BitmapImage _currentBitmapImage;
+        private BitmapImage _originalImage;
+        private BitmapImage _loadedImage;
 
-
-        // --- 로그 창 인스턴스 관리를 위한 필드 추가 ---
-        private LogWindow _logWindow;
-
-        // --- 선택 영역 관련 필드 추가 ---
+        // 선택 영역 및 좌표 관련 필드
         private Visibility _selectionVisibility;
-        private Rect _selectionRect; // UI상의 선택 영역 (좌표, 크기)
+        private Rect _selectionRect;
         private bool _isSelecting;
         private Point _startPoint;
+        private string _currentCoordinates;
 
-        // --- 속성 ---
+        // UI 및 상태 관련 필드
         private Size _imageControlSize;
-        public Size ImageControlSize
-        {
-            get => _imageControlSize;
-            set => SetProperty(ref _imageControlSize, value);
-        }
+        private double zoomLevel = 1.0;
 
+        // 기타
+        private string _lastImagePath;
+        private string _processingTime;
+
+        // 윈도우 인스턴스
+        private OriginalImageView _originalImageView;
+        private LogWindow _logWindow;
+
+        #endregion
+
+        #region Properties
+
+        // 이미지 관련 속성
         public BitmapImage CurrentBitmapImage
         {
             get => _currentBitmapImage;
@@ -64,10 +69,13 @@ namespace ImageProcessing.ViewModel
                 }
             }
         }
-        public BitmapImage LoadedImage { get => _loadedImage; set => SetProperty(ref _loadedImage, value); }
-        public string CurrentCoordinates { get => _currentCoordinates; set => SetProperty(ref _currentCoordinates, value); }
-        public string ProcessingTime { get => _processingTime; set => SetProperty(ref _processingTime, value); }
+        public BitmapImage LoadedImage
+        {
+            get => _loadedImage;
+            set => SetProperty(ref _loadedImage, value);
+        }
 
+        // 선택 영역 및 좌표 속성
         public Visibility SelectionVisibility
         {
             get => _selectionVisibility;
@@ -78,13 +86,23 @@ namespace ImageProcessing.ViewModel
             get => _selectionRect;
             set => SetProperty(ref _selectionRect, value);
         }
+        public string CurrentCoordinates
+        {
+            get => _currentCoordinates;
+            set => SetProperty(ref _currentCoordinates, value);
+        }
 
-        // --- 미리보기 관련 속성 ---
-        //public BitmapImage PreviewImage { get => _previewImage; set => SetProperty(ref _previewImage, value); }
-        //public bool IsPreviewing { get => _isPreviewing; set => SetProperty(ref _isPreviewing, value); }
-
-        // --- 줌 관련 속성 ---
-        private double zoomLevel = 1.0;
+        // UI 및 상태 속성
+        public Size ImageControlSize
+        {
+            get => _imageControlSize;
+            set => SetProperty(ref _imageControlSize, value);
+        }
+        public string ProcessingTime
+        {
+            get => _processingTime;
+            set => SetProperty(ref _processingTime, value);
+        }
         public double ZoomLevel
         {
             get => zoomLevel;
@@ -98,10 +116,13 @@ namespace ImageProcessing.ViewModel
                 }
             }
         }
-
         public string ZoomPercentage => $"{ZoomLevel * 100:0}%";
 
-        // --- Command 속성 ---
+        // Undo/Redo 상태
+        public bool CanUndo => _imageProcessor.CanUndo;
+        public bool CanRedo => _imageProcessor.CanRedo;
+
+        // Command 속성
         public ICommand LoadImageCommand { get; }
         public ICommand SaveImageCommand { get; }
         public ICommand ShowOriginalImageCommand { get; }
@@ -127,14 +148,12 @@ namespace ImageProcessing.ViewModel
         public ICommand TemplateMatchCommand { get; }
         public ICommand OpenSettingsCommand { get; }
         public ICommand ShowLogWindowCommand { get; }
-        //public ICommand ApplyPreviewCommand { get; }
-        //public ICommand CancelPreviewCommand { get; }
         public ICommand ZoomInCommand { get; }
         public ICommand ZoomOutCommand { get; }
 
+        #endregion
 
-        public bool CanUndo => _imageProcessor.CanUndo;
-        public bool CanRedo => _imageProcessor.CanRedo;
+        #region Constructor
 
         public MainViewModel()
         {
@@ -155,7 +174,6 @@ namespace ImageProcessing.ViewModel
             LoadImageCommand = new RelayCommand(async _ => await LoadImageAsync());
             SaveImageCommand = new RelayCommand(async _ => await SaveImageAsync(), _ => CurrentBitmapImage != null);
 
-            // 필터 Command 초기화 (미리보기 방식 적용)
             ApplyGrayscaleCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyGrayscale(CurrentBitmapImage), "Grayscale"));
             ApplySobelCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplySobel(CurrentBitmapImage), "Sobel"));
             ApplyLaplacianCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyLaplacian(CurrentBitmapImage), "Laplacian"));
@@ -164,35 +182,79 @@ namespace ImageProcessing.ViewModel
             ApplyDilationCommand = new RelayCommand(_ => ExecuteWithParameter("Dilation", (p, value) => p.ApplyDilation(CurrentBitmapImage, value), "3"));
             ApplyErosionCommand = new RelayCommand(_ => ExecuteWithParameter("Erosion", (p, value) => p.ApplyErosion(CurrentBitmapImage, value), "3"));
             ApplyMedianFilterCommand = new RelayCommand(_ => ExecuteWithParameter("Median Filter", (p, value) => p.ApplyMedianFilter(CurrentBitmapImage, value), "3"));
-
             FFTCommand = new RelayCommand(_ => ApplyFilter(() => _imageProcessor.ApplyFFT(CurrentBitmapImage), "FFT"), _ => CurrentBitmapImage != null);
             IFFTCommand = new RelayCommand(_ => ApplyIFFT(), _ => CurrentBitmapImage != null && _imageProcessor.HasFFTData);
 
             UndoCommand = new RelayCommand(_ => ExecuteUndo(), _ => CanUndo);
             RedoCommand = new RelayCommand(_ => ExecuteRedo(), _ => CanRedo);
-
             ShowOriginalImageCommand = new RelayCommand(_ => ShowOriginalImage(), _ => _originalImage != null);
             DeleteImageCommand = new RelayCommand(_ => DeleteImage(), _ => CurrentBitmapImage != null);
             ReloadImageCommand = new RelayCommand(async _ => await ReloadImageAsync(), _ => _originalImage != null || !string.IsNullOrEmpty(_lastImagePath));
             ExitCommand = new RelayCommand(_ => Application.Current.Shutdown());
-
             ShowLogWindowCommand = new RelayCommand(_ => ShowLogWindow());
 
-            // --- 편집 Command 초기화 ---
             CutSelectionCommand = new RelayCommand(_ => CutSelection(), _ => HasValidSelection());
             CopySelectionCommand = new RelayCommand(_ => CopySelection(), _ => HasValidSelection());
             DeleteSelectionCommand = new RelayCommand(_ => DeleteSelection(), _ => HasValidSelection());
             PasteCommand = new RelayCommand(_ => ExecutePaste(), _ => CurrentBitmapImage != null && _clipboardService.GetImage() != null);
-
             TemplateMatchCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
             OpenSettingsCommand = new RelayCommand(_ => { /* 기능 구현 필요 */ });
 
-            // --- 줌 Command 초기화 ---
             ZoomInCommand = new RelayCommand(_ => ZoomLevel += 0.1);
             ZoomOutCommand = new RelayCommand(_ => ZoomLevel -= 0.1);
         }
-        
-        
+
+        #endregion
+
+        #region Public Methods
+
+        public void UpdateCoordinates(Point point)
+        {
+            CurrentCoordinates = $"좌표: X={point.X:F0}, Y={point.Y:F0}";
+        }
+
+        public void ClearCoordinates()
+        {
+            CurrentCoordinates = "좌표: X=0, Y=0";
+        }
+
+        public void StartSelection(Point startPoint)
+        {
+            _isSelecting = true;
+            var imgPoint = ToImageCoordinates(startPoint, ImageControlSize, CurrentBitmapImage);
+            var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+            _startPoint = uiPoint;
+            SelectionRect = new Rect(uiPoint, new Size(0, 0));
+            SelectionVisibility = Visibility.Visible;
+        }
+
+        public void UpdateSelection(Point currentPoint)
+        {
+            if (_isSelecting)
+            {
+                var imgPoint = ToImageCoordinates(currentPoint, ImageControlSize, CurrentBitmapImage);
+                var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
+                var x = Math.Min(_startPoint.X, uiPoint.X);
+                var y = Math.Min(_startPoint.Y, uiPoint.Y);
+                var width = Math.Abs(_startPoint.X - uiPoint.X);
+                var height = Math.Abs(_startPoint.Y - uiPoint.Y);
+                SelectionRect = new Rect(x, y, width, height);
+            }
+        }
+
+        public void EndSelection()
+        {
+            _isSelecting = false;
+            if (SelectionRect.Width < 5 || SelectionRect.Height < 5)
+            {
+                ResetSelection();
+            }
+        }
+
+        #endregion
+
+        #region Private Methods
+
         private bool HasValidSelection()
         {
             return CurrentBitmapImage != null &&
@@ -223,7 +285,7 @@ namespace ImageProcessing.ViewModel
         {
             if (_originalImageView == null)
             {
-                _originalImageView = new Views.OriginalImageView(_originalImage);
+                _originalImageView = new OriginalImageView(_originalImage);
                 _originalImageView.Owner = Application.Current.MainWindow;
                 _originalImageView.Closed += (s, e) => _originalImageView = null;
                 _originalImageView.Show();
@@ -268,17 +330,14 @@ namespace ImageProcessing.ViewModel
             var imageSelectionRect = ConvertUiRectToImageRect(SelectionRect, ImageControlSize, CurrentBitmapImage);
             if (imageSelectionRect.IsEmpty) return;
 
-            // 1. 선택 영역을 클립보드에 복사
             var croppedImage = _imageProcessor.Crop(CurrentBitmapImage, imageSelectionRect);
             if (croppedImage != null)
             {
                 _clipboardService.SetImage(croppedImage);
 
-                // 2. 원본에서 선택 영역을 투명하게 처리
                 var clearedImage = _imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
                 CurrentBitmapImage = BitmapSourceToBitmapImage(clearedImage);
                 LoadedImage = CurrentBitmapImage;
-
                 ResetSelection();
                 _logService.AddLog("Cut Selection", 0);
             }
@@ -304,17 +363,9 @@ namespace ImageProcessing.ViewModel
             var clipboardImage = _clipboardService.GetImage();
             if (CurrentBitmapImage == null || clipboardImage == null) return;
 
-            // 붙여넣을 위치(이미지 좌표계 기준) 결정
-            Point pasteLocation;
-            if (HasValidSelection())
-            {
-                // UI 선택 영역의 좌상단 지점을 이미지 좌표로 변환
-                pasteLocation = ToImageCoordinates(SelectionRect.TopLeft, ImageControlSize, CurrentBitmapImage);
-            }
-            else
-            {
-                pasteLocation = new Point(0, 0); // 선택 영역 없으면 (0,0)
-            }
+            Point pasteLocation = HasValidSelection()
+                ? ToImageCoordinates(SelectionRect.TopLeft, ImageControlSize, CurrentBitmapImage)
+                : new Point(0, 0);
 
             var stopwatch = Stopwatch.StartNew();
             var pastedImageSource = _imageProcessor.Paste(CurrentBitmapImage, clipboardImage, pasteLocation);
@@ -323,14 +374,12 @@ namespace ImageProcessing.ViewModel
             CurrentBitmapImage = BitmapSourceToBitmapImage(pastedImageSource);
             LoadedImage = CurrentBitmapImage;
 
-            // 붙여넣기 후, 붙여넣은 영역을 선택 상태로 만듬
             var pastedImageRect = new Rect(pasteLocation.X, pasteLocation.Y, clipboardImage.PixelWidth, clipboardImage.PixelHeight);
             SelectionRect = ConvertImageRectToUiRect(pastedImageRect, ImageControlSize, CurrentBitmapImage);
             SelectionVisibility = Visibility.Visible;
 
-            long elapsedMs = stopwatch.ElapsedMilliseconds;
-            ProcessingTime = $"Process Time: {elapsedMs} ms";
-            _logService.AddLog("Paste", elapsedMs);
+            ProcessingTime = $"Process Time: {stopwatch.ElapsedMilliseconds} ms";
+            _logService.AddLog("Paste", stopwatch.ElapsedMilliseconds);
         }
 
         private void DeleteSelection()
@@ -343,27 +392,11 @@ namespace ImageProcessing.ViewModel
             var clearedImage = _imageProcessor.ClearSelection(CurrentBitmapImage, imageSelectionRect);
             CurrentBitmapImage = BitmapSourceToBitmapImage(clearedImage);
             LoadedImage = CurrentBitmapImage;
-
             ResetSelection();
             _logService.AddLog("Delete Selection", 0);
         }
 
         #region Coordinate Conversion Helpers
-
-        /// <summary>
-        /// UI 컨트롤의 좌표를 실제 이미지의 픽셀 좌표로 변환합니다.
-        /// </summary>
-        private double baseScale;
-
-        private void InitializeBaseScale(Size controlSize, BitmapSource originalImage)
-        {
-            double controlWidth = controlSize.Width;
-            double controlHeight = controlSize.Height;
-            double imageWidth = originalImage.PixelWidth;
-            double imageHeight = originalImage.PixelHeight;
-
-            baseScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
-        }
 
         private Point ToImageCoordinates(Point controlPoint, Size controlSize, BitmapSource imageSource)
         {
@@ -375,8 +408,9 @@ namespace ImageProcessing.ViewModel
             double imageWidth = imageSource.PixelWidth;
             double imageHeight = imageSource.PixelHeight;
 
-            // baseScale은 고정, ZoomLevel만 반영
+            double baseScale = Math.Min(controlWidth / imageWidth, controlHeight / imageHeight);
             double effectiveScale = baseScale * ZoomLevel;
+            if (effectiveScale == 0) return new Point(0, 0);
 
             double xOffset = (controlWidth - imageWidth * effectiveScale) / 2;
             double yOffset = (controlHeight - imageHeight * effectiveScale) / 2;
@@ -390,10 +424,6 @@ namespace ImageProcessing.ViewModel
             return new Point(x, y);
         }
 
-
-        /// <summary>
-        /// UI 컨트롤의 선택 영역(Rect)을 실제 이미지의 픽셀 영역(Rect)으로 변환합니다.
-        /// </summary>
         private Rect ConvertUiRectToImageRect(Rect uiRect, Size controlSize, BitmapSource imageSource)
         {
             if (imageSource == null) return Rect.Empty;
@@ -404,9 +434,6 @@ namespace ImageProcessing.ViewModel
             return new Rect(topLeft, bottomRight);
         }
 
-        /// <summary>
-        /// 실제 이미지의 픽셀 영역(Rect)을 UI 컨트롤의 영역(Rect)으로 변환합니다.
-        /// </summary>
         private Rect ConvertImageRectToUiRect(Rect imageRect, Size controlSize, BitmapSource imageSource)
         {
             if (imageSource == null || controlSize.Width == 0 || controlSize.Height == 0)
@@ -443,8 +470,10 @@ namespace ImageProcessing.ViewModel
         {
             if (CurrentBitmapImage == null) return;
 
-            var dialog = new ParameterInputDialog($"{operationName} Parameter", "값을 입력하세요:", defaultValue);
-            dialog.Owner = Application.Current.MainWindow;
+            var dialog = new ParameterInputDialog($"{operationName} Parameter", "값을 입력하세요:", defaultValue)
+            {
+                Owner = Application.Current.MainWindow
+            };
 
             if (dialog.ShowDialog() == true)
             {
@@ -471,9 +500,8 @@ namespace ImageProcessing.ViewModel
             {
                 CurrentBitmapImage = newImage;
                 LoadedImage = CurrentBitmapImage;
-                long elapsedMs = stopwatch.ElapsedMilliseconds;
-                ProcessingTime = $"Process Time: {elapsedMs} ms";
-                _logService.AddLog(operationName, elapsedMs);
+                ProcessingTime = $"Process Time: {stopwatch.ElapsedMilliseconds} ms";
+                _logService.AddLog(operationName, stopwatch.ElapsedMilliseconds);
             }
         }
 
@@ -484,6 +512,7 @@ namespace ImageProcessing.ViewModel
                 MessageBox.Show("FFT 데이터가 없습니다. 먼저 푸리에 변환을 수행해주세요.", "경고", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
             ApplyFilter(() => _imageProcessor.ApplyIFFT(CurrentBitmapImage), "IFFT");
             _imageProcessor.ClearFFTData();
         }
@@ -500,63 +529,14 @@ namespace ImageProcessing.ViewModel
             LoadedImage = CurrentBitmapImage;
         }
 
-        public void UpdateCoordinates(Point point)
-        {
-            CurrentCoordinates = $"좌표: X={point.X:F0}, Y={point.Y:F0}";
-        }
-
-        public void ClearCoordinates()
-        {
-            CurrentCoordinates = "좌표: X=0, Y=0";
-        }
-
-        public void StartSelection(Point startPoint)
-        {
-            _isSelecting = true;
-
-            // UI 좌표 → 이미지 좌표
-            var imgPoint = ToImageCoordinates(startPoint, ImageControlSize, CurrentBitmapImage);
-
-            // 이미지 좌표 → 다시 UI 좌표 (보정된 값)
-            var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
-
-            _startPoint = uiPoint;
-            SelectionRect = new Rect(uiPoint, new Size(0, 0));
-            SelectionVisibility = Visibility.Visible;
-        }
-
-        public void UpdateSelection(Point currentPoint)
-        {
-            if (_isSelecting)
-            {
-                var imgPoint = ToImageCoordinates(currentPoint, ImageControlSize, CurrentBitmapImage);
-                var uiPoint = ConvertImageRectToUiRect(new Rect(imgPoint, new Size(0, 0)), ImageControlSize, CurrentBitmapImage).TopLeft;
-
-                var x = Math.Min(_startPoint.X, uiPoint.X);
-                var y = Math.Min(_startPoint.Y, uiPoint.Y);
-                var width = Math.Abs(_startPoint.X - uiPoint.X);
-                var height = Math.Abs(_startPoint.Y - uiPoint.Y);
-
-                SelectionRect = new Rect(x, y, width, height);
-            }
-        }
-
-
-        public void EndSelection()
-        {
-            _isSelecting = false;
-            if (SelectionRect.Width < 5 || SelectionRect.Height < 5)
-            {
-                ResetSelection();
-            }
-        }
-
         private void ShowLogWindow()
         {
             if (_logWindow == null)
             {
-                _logWindow = new LogWindow(_logService);
-                _logWindow.Owner = Application.Current.MainWindow;
+                _logWindow = new LogWindow(_logService)
+                {
+                    Owner = Application.Current.MainWindow
+                };
                 _logWindow.Closed += (s, e) => _logWindow = null;
                 _logWindow.Show();
             }
@@ -578,6 +558,7 @@ namespace ImageProcessing.ViewModel
 
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(source));
+
             using (var stream = new MemoryStream())
             {
                 encoder.Save(stream);
@@ -589,8 +570,11 @@ namespace ImageProcessing.ViewModel
                 result.StreamSource = stream;
                 result.EndInit();
                 result.Freeze();
+
                 return result;
             }
         }
+
+        #endregion
     }
 }

@@ -18,7 +18,6 @@ namespace ImageProcessing.ViewModels
             {
                 return false;
             }
-
             storage = value;
             OnPropertyChanged(propertyName);
             return true;

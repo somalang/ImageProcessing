@@ -9,7 +9,6 @@ namespace ImageProcessing.ViewModel
     {
         private readonly LogService _logService;
         public ObservableCollection<LogEntry> LogHistory => _logService.LogHistory;
-
         public LogViewModel(LogService logService)
         {
             _logService = logService;

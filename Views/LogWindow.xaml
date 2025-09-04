@@ -5,15 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:ImageProcessing.ViewModel"
         mc:Ignorable="d"
-        Title="Log History" Height="450" Width="400"
+        Title="Log History"
+        Height="450"
+        Width="400"
         Topmost="True">
-    <Grid Margin="5">
-        <ListView ItemsSource="{Binding LogHistory}" VerticalContentAlignment="Stretch">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding}" ToolTip="{Binding}" FontSize="11" TextWrapping="Wrap" />
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
-    </Grid>
+
+	<Grid Margin="5">
+		<ListView ItemsSource="{Binding LogHistory}" VerticalContentAlignment="Stretch">
+			<ListView.ItemTemplate>
+				<DataTemplate>
+					<TextBlock Text="{Binding}"
+                               ToolTip="{Binding}"
+                               FontSize="11"
+                               TextWrapping="Wrap" />
+				</DataTemplate>
+			</ListView.ItemTemplate>
+		</ListView>
+	</Grid>
+
 </Window>

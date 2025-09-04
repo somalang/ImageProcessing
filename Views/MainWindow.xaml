@@ -14,6 +14,8 @@
     </Window.DataContext>
 
     <DockPanel>
+
+        <!-- 메뉴바 -->
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="파일">
                 <MenuItem Header="불러오기" Command="{Binding LoadImageCommand}" />
@@ -24,18 +26,21 @@
                 <MenuItem Header="저장" Command="{Binding SaveImageCommand}" />
                 <MenuItem Header="종료" Command="{Binding ExitCommand}" />
             </MenuItem>
+
             <MenuItem Header="편집">
                 <MenuItem Header="되돌리기 (Undo)" Command="{Binding UndoCommand}" />
                 <MenuItem Header="다시하기 (Redo)" Command="{Binding RedoCommand}" />
-                <Separator/>
+                <Separator />
                 <MenuItem Header="오려두기" Command="{Binding CutSelectionCommand}" />
                 <MenuItem Header="복제" Command="{Binding CopySelectionCommand}" />
                 <MenuItem Header="붙여넣기" Command="{Binding PasteCommand}" />
                 <MenuItem Header="삭제" Command="{Binding DeleteSelectionCommand}" />
             </MenuItem>
+
             <MenuItem Header="보기">
                 <MenuItem Header="로그 보기" Command="{Binding ShowLogWindowCommand}" />
             </MenuItem>
+
             <MenuItem Header="필터">
                 <MenuItem Header="그레이스케일" Command="{Binding ApplyGrayscaleCommand}" />
                 <MenuItem Header="가우시안 블러" Command="{Binding ApplyGaussianBlurCommand}" />
@@ -48,18 +53,22 @@
                     <MenuItem Header="침식..." Command="{Binding ApplyErosionCommand}" />
                 </MenuItem>
             </MenuItem>
+
             <MenuItem Header="FFT">
                 <MenuItem Header="푸리에 변환" Command="{Binding FFTCommand}" />
                 <MenuItem Header="역 변환" Command="{Binding IFFTCommand}" />
             </MenuItem>
+
             <MenuItem Header="매칭">
                 <MenuItem Header="템플릿 매칭" Command="{Binding TemplateMatchCommand}" />
             </MenuItem>
+
             <MenuItem Header="설정">
                 <MenuItem Header="환경 설정" Command="{Binding OpenSettingsCommand}" />
             </MenuItem>
         </Menu>
 
+        <!-- 상태바 -->
         <StatusBar DockPanel.Dock="Bottom">
             <DockPanel LastChildFill="False" Width="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=StatusBar}}">
                 <StatusBarItem DockPanel.Dock="Left">
@@ -76,6 +85,7 @@
             </DockPanel>
         </StatusBar>
 
+        <!-- 이미지 영역 -->
         <Grid Margin="5">
             <Border BorderBrush="Gray" BorderThickness="1">
                 <ScrollViewer x:Name="ImageScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
@@ -84,24 +94,31 @@
                             <ScaleTransform x:Name="ImageScaleTransform"/>
                         </Grid.LayoutTransform>
 
-                        <Image x:Name="DisplayImage" Source="{Binding LoadedImage}" Stretch="Uniform" 
-          MaxWidth="1400" MaxHeight="700" SizeChanged="DisplayImage_SizeChanged"/>
+                        <Image x:Name="DisplayImage" 
+                               Source="{Binding LoadedImage}" 
+                               Stretch="Uniform" 
+                               MaxWidth="1400" 
+                               MaxHeight="700" 
+                               SizeChanged="DisplayImage_SizeChanged"/>
+
                         <Canvas Background="Transparent"
-           MouseDown="Canvas_MouseDown"
-           MouseMove="Canvas_MouseMove"
-           MouseUp="Canvas_MouseUp"
-           MouseLeave="Canvas_MouseLeave">
-                            <Rectangle Stroke="Cyan" StrokeThickness="2" Fill="#5500FFFF"
-                  Visibility="{Binding SelectionVisibility}"
-                  Canvas.Left="{Binding SelectionRect.X}"
-                  Canvas.Top="{Binding SelectionRect.Y}"
-                  Width="{Binding SelectionRect.Width}"
-                  Height="{Binding SelectionRect.Height}" />
+                                MouseDown="Canvas_MouseDown"
+                                MouseMove="Canvas_MouseMove"
+                                MouseUp="Canvas_MouseUp"
+                                MouseLeave="Canvas_MouseLeave">
+                            <Rectangle Stroke="Cyan" 
+                                       StrokeThickness="2" 
+                                       Fill="#5500FFFF"
+                                       Visibility="{Binding SelectionVisibility}"
+                                       Canvas.Left="{Binding SelectionRect.X}"
+                                       Canvas.Top="{Binding SelectionRect.Y}"
+                                       Width="{Binding SelectionRect.Width}"
+                                       Height="{Binding SelectionRect.Height}" />
                         </Canvas>
                     </Grid>
-
                 </ScrollViewer>
             </Border>
         </Grid>
+
     </DockPanel>
 </Window>
