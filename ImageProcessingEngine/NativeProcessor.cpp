@@ -46,7 +46,7 @@ void Convolve(const unsigned char* src, unsigned char* dst, int width, int heigh
 }
 
 
-// 가우시안 블러: Wafer 표면의 미세 노이즈를 제거하여 결함 검출 정확도를 높입니다.
+// 가우시안 블러: Wafer 표면의 미세 노이즈를 제거
 void NativeProcessor::ApplyGaussianBlur(unsigned char* pixels, int width, int height)
 {
     // 5x5 가우시안 커널
@@ -68,7 +68,7 @@ void NativeProcessor::ApplyGaussianBlur(unsigned char* pixels, int width, int he
     Convolve(temp.data(), pixels, width, height, kernel, 5);
 }
 
-// 소벨 엣지 검출: 반도체 회로 패턴의 경계를 명확하게 추출하는 데 사용됩니다.
+// 소벨 엣지 검출: 반도체 회로 패턴의 경계를 명확하게 추출
 void NativeProcessor::ApplySobel(unsigned char* pixels, int width, int height)
 {
     ToGrayscale(pixels, width, height); // 먼저 그레이스케일로 변환
@@ -102,7 +102,7 @@ void NativeProcessor::ApplySobel(unsigned char* pixels, int width, int height)
     }
 }
 
-// 라플라시안 필터: Wafer의 미세한 스크래치나 크랙 같은 결함을 강조하는 데 유용합니다.
+// 라플라시안 필터: Wafer의 미세한 스크래치나 크랙 같은 결함을 강조.
 void NativeProcessor::ApplyLaplacian(unsigned char* pixels, int width, int height)
 {
     ToGrayscale(pixels, width, height); // 먼저 그레이스케일로 변환
@@ -120,7 +120,7 @@ void NativeProcessor::ApplyLaplacian(unsigned char* pixels, int width, int heigh
 }
 
 
-// 이진화: 회로 패턴과 배경을 명확하게 분리하여 패턴의 폭이나 간격을 측정하는 데 사용됩니다.
+// 이진화: 회로 패턴과 배경을 명확하게 분리하여 패턴의 폭이나 간격을 측정하는 데 사용
 void NativeProcessor::ApplyBinarization(unsigned char* pixels, int width, int height, int threshold)
 {
     ToGrayscale(pixels, width, height); // 먼저 그레이스케일로 변환
@@ -137,7 +137,7 @@ void NativeProcessor::ApplyBinarization(unsigned char* pixels, int width, int he
     }
 }
 
-// 팽창(Dilation): 끊어진 회로 패턴을 연결하거나 작은 노이즈(먼지 등)를 제거하는 데 사용됩니다.
+// 팽창(Dilation): 끊어진 회로 패턴을 연결하거나 작은 노이즈(먼지 등)를 제거하는 데 사용
 void NativeProcessor::ApplyDilation(unsigned char* pixels, int width, int height, int kernelSize)
 {
     int stride = width * 4;
@@ -161,7 +161,7 @@ void NativeProcessor::ApplyDilation(unsigned char* pixels, int width, int height
 }
 
 
-// 침식(Erosion): 회로 패턴의 얇은 부분을 제거하거나 붙어있는 객체를 분리하는 데 사용됩니다.
+// 침식(Erosion): 회로 패턴의 얇은 부분을 제거하거나 붙어있는 객체를 분리하는 데 사용
 void NativeProcessor::ApplyErosion(unsigned char* pixels, int width, int height, int kernelSize)
 {
     int stride = width * 4;
@@ -184,7 +184,7 @@ void NativeProcessor::ApplyErosion(unsigned char* pixels, int width, int height,
     }
 }
 
-// 중앙값 필터: 소금-후추 노이즈와 같은 임펄스 노이즈를 효과적으로 제거합니다.
+// 중앙값 필터
 void NativeProcessor::ApplyMedianFilter(unsigned char* pixels, int width, int height, int kernelSize)
 {
     if (kernelSize % 2 == 0) return; // 커널 크기는 홀수여야 함

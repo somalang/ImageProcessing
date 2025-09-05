@@ -1,5 +1,4 @@
-﻿// ===== ImageProcessingEngine.cpp 최상단 근처에 추가/수정 =====
-#include "pch.h"
+﻿#include "pch.h"
 #include "ImageProcessingEngine.h"
 #include "NativeProcessor.h"
 #include <cmath>
@@ -10,7 +9,6 @@
 using namespace System;
 using namespace ImageProcessingEngine;
 
-// ---- 표준이 아닌 M_PI를 직접 정의 (기존 int M_PI = 3.14; 는 삭제하세요) ----
 #ifndef M_PI
 #define M_PI 3.14159265358979323846264338327950288
 #endif
@@ -412,9 +410,9 @@ bool ImageProcessingEngine::ImageEngine::ApplyGaussianBlur(array<unsigned char>^
         }
 
         // 수직 패스 + 출력
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
+    #ifdef _OPENMP
+    #pragma omp parallel for
+    #endif
         for (int y = 0; y < height; ++y)
         {
             for (int x = 0; x < width; ++x)
@@ -445,9 +443,7 @@ bool ImageProcessingEngine::ImageEngine::ApplyGaussianBlur(array<unsigned char>^
     }
 }
 
-// ===== 이하 기존 래퍼들(Sobel, Laplacian, Morphology 등)은 그대로 유지 =====
-// 
-// // Sobel
+// Sobel
 bool ImageProcessingEngine::ImageEngine::ApplySobel(array<unsigned char>^ pixelBuffer, int width, int height)
 {
     pin_ptr<unsigned char> nativePixels = &pixelBuffer[0];
@@ -496,5 +492,3 @@ bool ImageProcessingEngine::ImageEngine::ApplyMedianFilter(array<unsigned char>^
     processor.ApplyMedianFilter(nativePixels, width, height, kernelSize);
     return true;
 }
-
-// 필요시 OpenMP로 바깥 y 루프에 parallel for만 달아줘도 체감 속도 올라갑니다.
